@@ -1,7 +1,5 @@
 package de.hfu.lexer
 
-
-
 sealed abstract class Token( val text:String){
   override def toString: String = text
 }
@@ -42,5 +40,3 @@ case object FalseToken extends Token("FALSE")
 case object IfToken extends Token("IF")
 case object ElseToken extends Token("ELSE")
 case object ReturnToken extends Token("RETURN")
-
-
