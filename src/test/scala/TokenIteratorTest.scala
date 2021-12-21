@@ -1,7 +1,7 @@
 import de.hfu.lexer._
 import org.scalatest.funsuite.AnyFunSuite
 
-class LexerTest extends AnyFunSuite {
+class TokenIteratorTest extends AnyFunSuite {
   val code =
     """let five = 5;
       |let ten = 10;
@@ -99,7 +99,7 @@ class LexerTest extends AnyFunSuite {
   )
 
   test("all tokens") {
-    for((i,(token,_)) <- Iterator.from(1).zip(new TokenIterator(code).toSeq)){
+    for((i,(token,_)) <- Iterator.from(0).zip(new TokenIterator(code).toSeq)){
       assert(token==expected(i))
     }
   }

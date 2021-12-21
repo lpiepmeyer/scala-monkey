@@ -60,7 +60,6 @@ class Parser(val lexer: TokenIterator) {
           addStatement(result, Some(statement))
         case _ => parseExpression()
       }
-      println(result)
     }
     Program(result.toList)
   }
