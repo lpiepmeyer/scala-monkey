@@ -20,9 +20,9 @@ class Parser(val lexer: TokenIterator) {
   def parseLet() = {
     if (!nextTokens()) throw new RuntimeException
     (curToken, peekToken) match {
-      case (identifier: IdentifierToken, AssignmentToken) if nextTokens() =>
+      case (identifier: IdentifierToken, AssignmentToken) if nextTokens() && nextTokens() =>
         val expression = parseExpression()
-        LetStatement(identifier, expression)
+        LetStatement(identifier.literal, expression)
       case _ => throw new RuntimeException
     }
   }
@@ -33,18 +33,25 @@ class Parser(val lexer: TokenIterator) {
     ReturnStatement(expression)
   }
 
+  def parseExpressionStatement():ExpressionStatement= {
+    if(peekToken!=SemicolonToken)throw new RuntimeException
+    ExpressionStatement(parseExpression())
+  }
+
   def parseExpression(): Expression = {
-    if (!nextTokens()) throw new RuntimeException
-    Expression()
+    if (peekToken!=SemicolonToken) throw new RuntimeException
+    curToken match {
+      case IntegerToken(literal) => IntegerLiteral(literal.toInt)
+      case TrueToken => BoolLiteral(true)
+      case FalseToken => BoolLiteral(false)
+      case IdentifierToken(name) => Identifier(name)
+    }
   }
 
   def addStatement(statements: ListBuffer[Statement], statement: Some[Statement]): Unit = {
-    if (!nextTokens()) throw new RuntimeException
-    curToken match {
-      case SemicolonToken if (statement.isDefined)  =>
-        statements.addOne(statement.get)
-      case _ => throw new RuntimeException
-    }
+    if (peekToken==SemicolonToken && statement.isDefined)
+      statements.addOne(statement.get)
+    else throw new RuntimeException
   }
 
 
@@ -58,7 +65,9 @@ class Parser(val lexer: TokenIterator) {
         case ReturnToken =>
           val statement = parseReturn()
           addStatement(result, Some(statement))
-        case _ => parseExpression()
+        case _ =>
+          val statement = parseExpressionStatement()
+          addStatement(result, Some(statement))
       }
     }
     Program(result.toList)

@@ -1,17 +1,21 @@
 package de.hfu.parser
 
-import de.hfu.lexer.{IdentifierToken, TokenIterator}
+import de.hfu.lexer.TokenIterator
 
 abstract class Node {
 
 }
 abstract class Statement() extends Node
-case class Expression() extends Node
+abstract class Expression() extends Node
 case class Program(statements: List[Statement])
 
-case class LetStatement(token :IdentifierToken, expression: Expression) extends Statement
+case class LetStatement(name :String, expression: Expression) extends Statement
 case class ReturnStatement(expression: Expression) extends Statement
+case class ExpressionStatement(expression: Expression) extends Statement
 
+case class BoolLiteral(value: Boolean) extends Expression
+case class IntegerLiteral(value: Int) extends Expression
+case class Identifier(value: String) extends Expression
 
 
 object Main extends App{
@@ -22,11 +26,14 @@ object Main extends App{
     println(program)
   }
 def parseLet(): Unit ={
-  val it=new TokenIterator("let x=23;")
+  val it=new TokenIterator("let y = true;")
   val parser=new Parser(it)
   val program=parser.parseProgram()
   println(program)
+
 }
+
+
 
   parseLet
   parseReturn
