@@ -21,7 +21,8 @@ class TokenIteratorTest extends AnyFunSuite {
       |}
       |
       |10 == 10;
-      |10 != 9;""".stripMargin
+      |10 != 9;
+      |2-4;""".stripMargin
   val expected = List(
     LetToken,
     IdentifierToken("five"),
@@ -95,7 +96,10 @@ class TokenIteratorTest extends AnyFunSuite {
     IntegerToken("10"),
     NotEqualsToken,
     IntegerToken("9"),
-    SemicolonToken
+    SemicolonToken,
+    IntegerToken("2"),
+    MinusToken,
+    IntegerToken("4")
   )
 
   test("all tokens") {

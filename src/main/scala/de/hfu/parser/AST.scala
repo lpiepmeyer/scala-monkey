@@ -1,6 +1,6 @@
 package de.hfu.parser
 
-import de.hfu.lexer.TokenIterator
+import de.hfu.lexer.Token
 
 abstract class Node {
 
@@ -9,34 +9,22 @@ abstract class Statement() extends Node
 abstract class Expression() extends Node
 case class Program(statements: List[Statement])
 
-case class LetStatement(name :String, expression: Expression) extends Statement
-case class ReturnStatement(expression: Expression) extends Statement
+case class LetStatement(name :String, expression: Expression) extends Statement{
+  override def toString()="let "+name+" = "+expression
+}
+case class ReturnStatement(expression: Expression) extends Statement{
+  override def toString()="return "+expression
+}
 case class ExpressionStatement(expression: Expression) extends Statement
 
-case class BoolLiteral(value: Boolean) extends Expression
-case class IntegerLiteral(value: Int) extends Expression
-case class Identifier(value: String) extends Expression
-
-
-object Main extends App{
-  def parseReturn(): Unit ={
-    val it=new TokenIterator("return 23;")
-    val parser=new Parser(it)
-    val program=parser.parseProgram()
-    println(program)
-  }
-def parseLet(): Unit ={
-  val it=new TokenIterator("let y = true;")
-  val parser=new Parser(it)
-  val program=parser.parseProgram()
-  println(program)
-
+case class BoolLiteral(value: Boolean) extends Expression{
+  override def toString()=value.toString
 }
-
-
-
-  parseLet
-  parseReturn
+case class IntegerLiteral(value: Int) extends Expression{
+  override def toString()=value.toString
 }
-
-case object Expression
+case class Identifier(value: String) extends Expression{
+  override def toString()=value.toString
+}
+case class PrefixExpression(operator: Token, right: Expression) extends Expression
+case class InfixExpression(operator: Token,left: Expression, right: Expression) extends Expression

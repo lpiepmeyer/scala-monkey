@@ -4,10 +4,33 @@ import de.hfu.lexer._
 
 import scala.collection.mutable.ListBuffer
 
+
+object Precedence extends Enumeration {
+  type Precedence = Value
+  val LOWEST, EQUALS, LESSGREATER, SUM, PRODUCT, CALL = Value
+}
+
 class Parser(val lexer: TokenIterator) {
+
+  import Precedence._
+
   var errors: ListBuffer[String] = ListBuffer()
-  var curToken:Token=null
-  var peekToken  :Token =null
+  var curToken: Token = null
+  var peekToken: Token = null
+
+
+  val precedences = Map[Token, Precedence](
+    EqualsToken -> EQUALS,
+    NotEqualsToken -> EQUALS,
+    LessThenToken -> LESSGREATER,
+    GreaterThenToken -> LESSGREATER,
+    PlusToken -> SUM,
+    MinusToken -> SUM,
+    SlashToken -> PRODUCT,
+    AsteriskToken -> PRODUCT,
+    LeftParanthesisToken -> CALL
+  )
+  
 
   def nextTokens(): Boolean = {
     if (!lexer.hasNext) return false
@@ -21,7 +44,7 @@ class Parser(val lexer: TokenIterator) {
     if (!nextTokens()) throw new RuntimeException
     (curToken, peekToken) match {
       case (identifier: IdentifierToken, AssignmentToken) if nextTokens() && nextTokens() =>
-        val expression = parseExpression()
+        val expression = parseExpression(LOWEST)
         LetStatement(identifier.literal, expression)
       case _ => throw new RuntimeException
     }
@@ -29,27 +52,88 @@ class Parser(val lexer: TokenIterator) {
 
   def parseReturn() = {
     if (!nextTokens()) throw new RuntimeException
-    val expression = parseExpression()
+    val expression = parseExpression(LOWEST)
     ReturnStatement(expression)
   }
 
-  def parseExpressionStatement():ExpressionStatement= {
-    if(peekToken!=SemicolonToken)throw new RuntimeException
-    ExpressionStatement(parseExpression())
+  def parseExpressionStatement(): ExpressionStatement = {
+    val result = ExpressionStatement(parseExpression(LOWEST))
+    if (peekToken != SemicolonToken) throw new RuntimeException
+    return result
   }
 
-  def parseExpression(): Expression = {
-    if (peekToken!=SemicolonToken) throw new RuntimeException
-    curToken match {
-      case IntegerToken(literal) => IntegerLiteral(literal.toInt)
-      case TrueToken => BoolLiteral(true)
-      case FalseToken => BoolLiteral(false)
-      case IdentifierToken(name) => Identifier(name)
+  def parseInfixExpression(left: Expression): Expression = {
+    val precedence = curPrecedence()
+    val operator = curToken
+    nextTokens()
+    val right = parseExpression(precedence)
+    InfixExpression(operator, left, right)
+  }
+
+  def parseCallExpression(): Expression = {
+    throw new RuntimeException
+  }
+
+  def parseGroupedExpression(): Expression = {
+    throw new RuntimeException
+  }
+
+  def parseIfExpression(): Expression = {
+    throw new RuntimeException
+  }
+
+  def parseFunctionLiteral(): Expression = {
+    throw new RuntimeException
+  }
+
+  def createInfix(leftExpression: Expression) = curToken match {
+    case PlusToken | MinusToken | SlashToken | AsteriskToken | EqualsToken | NotEqualsToken | LessThenToken | GreaterThenToken => parseInfixExpression(leftExpression)
+    case LeftParanthesisToken => parseCallExpression()
+    case _ => leftExpression
+  }
+
+  def createPrefix() = curToken match {
+    case IntegerToken(literal) => IntegerLiteral(literal.toInt)
+    case TrueToken => BoolLiteral(true)
+    case FalseToken => BoolLiteral(false)
+    case IdentifierToken(name) => Identifier(name)
+    case LeftParanthesisToken => parseGroupedExpression()
+    case IfToken => parseIfExpression()
+    case FunctionToken => parseFunctionLiteral()
+    case BangToken | MinusToken => parsePrefixExpression()
+    case _ => throw new RuntimeException
+  }
+
+
+  def getPrecedence(token: Token) = precedences.get(token) match {
+    case None => LOWEST
+    case Some(precedence) => precedence
+  }
+
+  def peekPrecedence(): Precedence = getPrecedence(peekToken)
+
+  def curPrecedence(): Precedence = getPrecedence(curToken)
+
+
+  def parseExpression(precedence: Precedence): Expression = {
+    var leftExpression = createPrefix()
+
+    while (peekToken != SemicolonToken && precedence < peekPrecedence()) {
+      nextTokens()
+      leftExpression = createInfix(leftExpression)
     }
+    leftExpression
+  }
+
+  def parsePrefixExpression(): Expression = {
+    val token = curToken
+    if (!nextTokens()) throw new RuntimeException
+    val expression = parseExpression(LOWEST)
+    PrefixExpression(token, expression)
   }
 
   def addStatement(statements: ListBuffer[Statement], statement: Some[Statement]): Unit = {
-    if (peekToken==SemicolonToken && statement.isDefined)
+    if (peekToken == SemicolonToken && statement.isDefined)
       statements.addOne(statement.get)
     else throw new RuntimeException
   }
@@ -75,45 +159,3 @@ class Parser(val lexer: TokenIterator) {
 
 }
 
-/*
-
-
-func (p *Parser) ParseProgram() *ast.Program {
-	program := &ast.Program{}
-	program.Statements = []ast.Statement{}
-
-	for !p.curTokenIs(token.EOF) {
-		stmt := p.parseStatement()
-		if stmt != nil {
-			program.Statements = append(program.Statements, stmt)
-		}
-		if !p.expectPeek(token.SEMICOLON) {
-			return program
-		}
-		p.nextToken()
-	}
-
-	return program
-}
-
-
-
-func (p *Parser) curTokenIs(t token.TokenType) bool {
-	return p.curToken.Type == t
-}
-
-func (p *Parser) peekTokenIs(t token.TokenType) bool {
-	return p.peekToken.Type == t
-}
-
-func (p *Parser) expectPeek(t token.TokenType) bool {
-	if p.peekTokenIs(t) {
-		p.nextToken()
-		return true
-	} else {
-		p.peekError(t)
-		return false
-	}
-}
-
-*/

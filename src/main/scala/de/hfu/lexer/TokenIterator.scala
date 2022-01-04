@@ -12,6 +12,7 @@ class TokenIterator(val input: String) extends Iterator[(Token, Token)]{
     tokenizer.slashStarComments(false)
     tokenizer.slashSlashComments(false)
     tokenizer.ordinaryChar('/')
+    tokenizer.ordinaryChar('-')
     private var currentToken = tokenizer.nextToken
 
 
@@ -27,10 +28,10 @@ class TokenIterator(val input: String) extends Iterator[(Token, Token)]{
       if (currentToken == '!') return lookahead(NotEqualsToken, BangToken)
 
       val result = tokenizer.ttype match {
-        case StreamTokenizer.TT_NUMBER => IntegerToken(tokenizer.nval.toInt.toString)
-        case StreamTokenizer.TT_WORD => Token.lookupIdent(tokenizer.sval)
         case _ if charToToken.keySet.contains(currentToken.toChar) =>
           charToToken(currentToken.toChar)
+        case StreamTokenizer.TT_NUMBER => IntegerToken(tokenizer.nval.toInt.toString)
+        case StreamTokenizer.TT_WORD => Token.lookupIdent(tokenizer.sval)
         case StreamTokenizer.TT_EOF=>EOFToken
         case _ => IllegalToken(currentToken.toString)
       }

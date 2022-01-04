@@ -1,12 +1,11 @@
-import de.hfu.lexer.TokenIterator
+
+import de.hfu.parser.Precedence._
 
 object Main extends App {
-  val code =
-    """let hello != 23;
-      |return x;""".stripMargin
-
- for(token<-new TokenIterator(code)){
-   println(token)
- }
+  val eq=EQUALS
+  val sum=SUM
+  println(eq)
+  println(sum)
+  println(eq<sum)
 }
 

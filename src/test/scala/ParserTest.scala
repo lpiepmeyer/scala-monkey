@@ -45,4 +45,30 @@ class ParserTest extends AnyFunSuite {
     )
     check(testCases)
   }
+
+  test("parse prefix expression") {
+    val testCases=List(
+      ("!5;", Program(List(ExpressionStatement(PrefixExpression(BangToken, IntegerLiteral(5)))))),
+      ("!!5;", Program(List(ExpressionStatement(PrefixExpression(BangToken,PrefixExpression(BangToken,IntegerLiteral(5))))))),
+      ("!foobar;", Program(List(ExpressionStatement(PrefixExpression(BangToken, Identifier("foobar")))))),
+      ("-foobar;", Program(List(ExpressionStatement(PrefixExpression(MinusToken, Identifier("foobar")))))),
+      ("!true;", Program(List(ExpressionStatement(PrefixExpression(BangToken, BoolLiteral(true)))))),
+      ("!false;", Program(List(ExpressionStatement(PrefixExpression(BangToken, BoolLiteral(false)))))),
+    )
+    check(testCases)
+  }
+
+  test("parse simple infix expression") {
+    val testCases=List(
+      ("3+4;", Program(List(ExpressionStatement(InfixExpression(PlusToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3-4;", Program(List(ExpressionStatement(InfixExpression(MinusToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3*4;", Program(List(ExpressionStatement(InfixExpression(AsteriskToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3/4;", Program(List(ExpressionStatement(InfixExpression(SlashToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3<4;", Program(List(ExpressionStatement(InfixExpression(LessThenToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3>4;", Program(List(ExpressionStatement(InfixExpression(GreaterThenToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3==4;", Program(List(ExpressionStatement(InfixExpression(EqualsToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3!=4;", Program(List(ExpressionStatement(InfixExpression(NotEqualsToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+    )
+    check(testCases)
+  }
 }
