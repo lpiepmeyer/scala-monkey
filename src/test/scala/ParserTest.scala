@@ -14,12 +14,19 @@ class ParserTest extends AnyFunSuite {
 
   private def checkExpressions(testCases: List[(String, Expression)]): Unit ={
     for((input, expected)<-testCases){
+      val actual=new Parser(new TokenIterator(input+";")).parseProgram()
+      assert(actual==Program(List(ExpressionStatement(expected))))
+    }
+  }
+/*
+  private def checkExpressions(testCases: List[(String, Expression)]): Unit ={
+    for((input, expected)<-testCases){
       val actual=new Parser(new TokenIterator(input)).parseExpression()
       assert(actual==expected)
     }
   }
+ */
 
-  
   test("parse let expression") {
     val testCases=List(
       ("let x = 5;", Program(List(LetStatement("x",IntegerLiteral(5))))),
@@ -92,7 +99,7 @@ class ParserTest extends AnyFunSuite {
       ("foobar*barfoo", InfixExpression(AsteriskToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar/barfoo", InfixExpression(SlashToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar<barfoo", InfixExpression(LessThenToken, Identifier("foobar"), Identifier("barfoo"))),
-      ("foobar>barfoo;", InfixExpression(GreaterThenToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar>barfoo", InfixExpression(GreaterThenToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar==barfoo", InfixExpression(EqualsToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar!=barfoo", InfixExpression(NotEqualsToken, Identifier("foobar"), Identifier("barfoo"))),
     )
