@@ -7,7 +7,7 @@ class TokenIterator(val input: String) extends Iterator[(Token, Token)]{
 
   private class Lexer(val input: String) {
 
-    private val charToToken = Map('+' -> PlusToken, '-' -> MinusToken, '*' -> AsteriskToken, '/' -> SlashToken, '!' -> BangToken, '(' -> LeftParanthesisToken, ')' -> RightParanthesisToken, '{' -> LeftBraceToken, '}' -> RightBraceToken, '<' -> LessThenToken, '>' -> GreaterThenToken, 0 -> EOFToken, ';' -> SemicolonToken, ',' -> CommaToken, '=' -> AssignmentToken)
+    private val charToToken = Map('+' -> PlusToken, '-' -> MinusToken, '*' -> AsteriskToken, '/' -> SlashToken, '!' -> BangToken, '(' -> LeftParenthesisToken, ')' -> RightParenthesisToken, '{' -> LeftBraceToken, '}' -> RightBraceToken, '<' -> LessThenToken, '>' -> GreaterThenToken, 0 -> EOFToken, ';' -> SemicolonToken, ',' -> CommaToken, '=' -> AssignmentToken)
     private val tokenizer = new StreamTokenizer(new StringReader(input))
     tokenizer.slashStarComments(false)
     tokenizer.slashSlashComments(false)

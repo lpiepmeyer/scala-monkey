@@ -34,3 +34,5 @@ case class PrefixExpression(operator: Token, right: Expression) extends Expressi
 case class InfixExpression(operator: Token,left: Expression, right: Expression) extends Expression
 
 case class  FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression
+
+case class CallExpression(function: Expression, arguments: List[Expression]) extends Expression

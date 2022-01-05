@@ -11,6 +11,15 @@ class ParserTest extends AnyFunSuite {
     }
   }
 
+
+  private def checkExpressions(testCases: List[(String, Expression)]): Unit ={
+    for((input, expected)<-testCases){
+      val actual=new Parser(new TokenIterator(input)).parseExpression()
+      assert(actual==expected)
+    }
+  }
+
+  
   test("parse let expression") {
     val testCases=List(
       ("let x = 5;", Program(List(LetStatement("x",IntegerLiteral(5))))),
@@ -19,6 +28,8 @@ class ParserTest extends AnyFunSuite {
     )
     check(testCases)
   }
+
+
   test("parse return expression") {
     val testCases=List(
       ("return 5;", Program(List(ReturnStatement(IntegerLiteral(5))))),
@@ -29,32 +40,29 @@ class ParserTest extends AnyFunSuite {
   }
 
 
-  private def checkExpressions(testCases: List[(String, Expression)]): Unit ={
-    for((input, expected)<-testCases){
-      val actual=new Parser(new TokenIterator(input)).parseExpression()
-      assert(actual==expected)
-    }
-  }
-
-
   test("parse integer expression") {
     val testCases=List(
       ("5", IntegerLiteral(5)),
     )
     checkExpressions(testCases)
   }
+
+
   test("parse boolean expression") {
     val testCases=List(
       ("false", BoolLiteral(false)),
     )
     checkExpressions(testCases)
   }
+
+
   test("parse identifier expression") {
     val testCases=List(
       ("foobar", Identifier("foobar")),
     )
     checkExpressions(testCases)
   }
+
 
   test("parse prefix expression") {
     val testCases=List(
@@ -67,6 +75,7 @@ class ParserTest extends AnyFunSuite {
     )
     checkExpressions(testCases)
   }
+
 
   test("parse simple infix expression") {
     val testCases=List(
@@ -89,6 +98,7 @@ class ParserTest extends AnyFunSuite {
     )
     checkExpressions(testCases)
   }
+
 
   test("parse infix expressions with precedences") {
     val testCases=List(
@@ -118,6 +128,14 @@ class ParserTest extends AnyFunSuite {
 
       ("fn(x, y) { x + y; }", FunctionLiteral(List(Identifier("x"), Identifier("y")),BlockStatement(List(ExpressionStatement(InfixExpression(PlusToken,Identifier("x"),Identifier("y"))))))),
       ("fn() {}", FunctionLiteral(List(),BlockStatement(List()))),
+    )
+    checkExpressions(testCases)
+  }
+
+
+  test("parse call  expressions") {
+    val testCases=List(
+      ("add(1, 2 * 3, 4 + 5)", CallExpression(Identifier("add"),List(IntegerLiteral(1), InfixExpression(AsteriskToken,IntegerLiteral(2),IntegerLiteral(3)), InfixExpression(PlusToken,IntegerLiteral(4),IntegerLiteral(5))))),
     )
     checkExpressions(testCases)
   }

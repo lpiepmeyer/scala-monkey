@@ -27,7 +27,7 @@ class Parser(val lexer: TokenIterator) {
     MinusToken -> SUM,
     SlashToken -> PRODUCT,
     AsteriskToken -> PRODUCT,
-    LeftParanthesisToken -> CALL
+    LeftParenthesisToken -> CALL
   )
 
 
@@ -35,8 +35,9 @@ class Parser(val lexer: TokenIterator) {
     val pair = lexer.next()
     curToken = pair._1
     peekToken = pair._2
-    curToken!=EOFToken
+    curToken != EOFToken
   }
+
 
   def parseLet(): LetStatement = {
     if (!nextTokens()) throw new RuntimeException
@@ -49,6 +50,7 @@ class Parser(val lexer: TokenIterator) {
     }
   }
 
+
   def parseReturn(): ReturnStatement = {
     if (!nextTokens()) throw new RuntimeException
     val expression = parseExpression()
@@ -56,11 +58,13 @@ class Parser(val lexer: TokenIterator) {
     ReturnStatement(expression)
   }
 
+
   def parseExpressionStatement(): ExpressionStatement = {
     val result = ExpressionStatement(parseExpression())
     if (peekToken == SemicolonToken) nextTokens()
     result
   }
+
 
   def parseInfixExpression(left: Expression): Expression = {
     val precedence = curPrecedence()
@@ -70,89 +74,114 @@ class Parser(val lexer: TokenIterator) {
     InfixExpression(operator, left, right)
   }
 
-  def parseCallExpression(): Expression = {
-    throw new RuntimeException
+
+  def parseCallArguments(): List[Expression] = {
+    val result: ListBuffer[Expression] = ListBuffer()
+    if (peekToken == RightParenthesisToken) {
+      nextTokens()
+      return result.toList
+    }
+    nextTokens()
+    result.addOne(parseExpression())
+    nextTokens()
+    while (curToken == CommaToken) {
+      nextTokens()
+      result.addOne(parseExpression())
+      nextTokens()
+    }
+    if (curToken != RightParenthesisToken) throw new RuntimeException
+    result.toList
   }
+
+
+  def parseCallExpression(function: Expression): CallExpression = {
+    val arguments = parseCallArguments()
+    CallExpression(function, arguments)
+  }
+
 
   def parseGroupedExpression(): Expression = {
     nextTokens()
-    val result =parseExpression()
-  if(peekToken != RightParanthesisToken )
-    throw new RuntimeException
-  nextTokens()
-
-     result
+    val result = parseExpression()
+    if (peekToken != RightParenthesisToken)
+      throw new RuntimeException
+    nextTokens()
+    result
   }
 
-  def parseIfExpression(): Expression = {
 
-    if(peekToken!=LeftParanthesisToken) throw new RuntimeException
+  def parseIfExpression(): Expression = {
+    if (peekToken != LeftParenthesisToken) throw new RuntimeException
     nextTokens()
     nextTokens()
-    val condition=parseExpression()
-    if(peekToken!=RightParanthesisToken) throw new RuntimeException
+    val condition = parseExpression()
+    if (peekToken != RightParenthesisToken) throw new RuntimeException
     nextTokens()
-    if(peekToken!=LeftBraceToken) throw new RuntimeException
+    if (peekToken != LeftBraceToken) throw new RuntimeException
     nextTokens()
     val consequence = parseBlockStatement()
-    if(peekToken==ElseToken) {
+    if (peekToken == ElseToken) {
       nextTokens()
-      if(peekToken!=LeftBraceToken) throw new RuntimeException
+      if (peekToken != LeftBraceToken) throw new RuntimeException
       nextTokens()
-      val alternative=parseBlockStatement()
+      val alternative = parseBlockStatement()
       return IfExpression(condition, consequence, Some(alternative))
     }
     IfExpression(condition, consequence, None)
   }
 
-  def parseIdentifier() : Identifier={
-    val result=curToken match {
-      case IdentifierToken(name)=>Identifier(name)
-      case _=>throw new RuntimeException
+
+  def parseIdentifier(): Identifier = {
+    val result = curToken match {
+      case IdentifierToken(name) => Identifier(name)
+      case _ => throw new RuntimeException
     }
     nextTokens()
     result
   }
 
-  def parseFunctionParameters():List[Identifier] = {
+
+  def parseFunctionParameters(): List[Identifier] = {
     val result: ListBuffer[Identifier] = ListBuffer()
-    if (peekToken==RightParanthesisToken) {
+    if (peekToken == RightParenthesisToken) {
       nextTokens()
       return result.toList
     }
-  //  nextTokens()
     nextTokens()
     result.addOne(parseIdentifier())
-    while (curToken==CommaToken){
+    while (curToken == CommaToken) {
       nextTokens()
       result.addOne(parseIdentifier())
     }
-    if (curToken!=RightParanthesisToken) throw new RuntimeException
+    if (curToken != RightParenthesisToken) throw new RuntimeException
     result.toList
   }
 
+
   def parseFunctionLiteral(): Expression = {
-    if(peekToken!=LeftParanthesisToken) throw new RuntimeException
+    if (peekToken != LeftParenthesisToken) throw new RuntimeException
     nextTokens()
-    val parameters=parseFunctionParameters()
-    if(peekToken!=LeftBraceToken) throw new RuntimeException
+    val parameters = parseFunctionParameters()
+    if (peekToken != LeftBraceToken) throw new RuntimeException
     nextTokens()
-    val body=parseBlockStatement()
+    val body = parseBlockStatement()
     FunctionLiteral(parameters, body)
   }
 
+
   def createInfix(leftExpression: Expression): Expression = curToken match {
     case PlusToken | MinusToken | SlashToken | AsteriskToken | EqualsToken | NotEqualsToken | LessThenToken | GreaterThenToken => parseInfixExpression(leftExpression)
-    case LeftParanthesisToken => parseCallExpression()
+    case LeftParenthesisToken => parseCallExpression(leftExpression)
     case _ => leftExpression
   }
+
 
   def createPrefix(): Expression = curToken match {
     case IntegerToken(literal) => IntegerLiteral(literal.toInt)
     case TrueToken => BoolLiteral(true)
     case FalseToken => BoolLiteral(false)
     case IdentifierToken(name) => Identifier(name)
-    case LeftParanthesisToken => parseGroupedExpression()
+    case LeftParenthesisToken => parseGroupedExpression()
     case IfToken => parseIfExpression()
     case FunctionToken => parseFunctionLiteral()
     case BangToken | MinusToken => parsePrefixExpression()
@@ -165,12 +194,14 @@ class Parser(val lexer: TokenIterator) {
     case Some(precedence) => precedence
   }
 
+
   def peekPrecedence(): Precedence = getPrecedence(peekToken)
+
 
   def curPrecedence(): Precedence = getPrecedence(curToken)
 
 
-  def parseExpression(precedence: Precedence=LOWEST): Expression = {
+  def parseExpression(precedence: Precedence = LOWEST): Expression = {
     var leftExpression = createPrefix()
 
     while (peekToken != SemicolonToken && precedence < peekPrecedence()) {
@@ -180,6 +211,7 @@ class Parser(val lexer: TokenIterator) {
     leftExpression
   }
 
+
   def parsePrefixExpression(): Expression = {
     val token = curToken
     if (!nextTokens())
@@ -188,31 +220,33 @@ class Parser(val lexer: TokenIterator) {
     PrefixExpression(token, expression)
   }
 
+
   def addStatement(statements: ListBuffer[Statement], statement: Some[Statement]): Unit = {
-    if ( statement.isDefined)
+    if (statement.isDefined)
       statements.addOne(statement.get)
     else throw new RuntimeException
   }
 
-def parseStatement(): Statement = curToken match {
+
+  def parseStatement(): Statement = curToken match {
     case LetToken => parseLet()
     case ReturnToken => parseReturn()
     case _ => parseExpressionStatement()
-}
+  }
 
 
   def parseProgram(): Program = {
     val result: ListBuffer[Statement] = ListBuffer()
     do {
-       addStatement(result, Some(parseStatement()))
-    }while (nextTokens())
+      addStatement(result, Some(parseStatement()))
+    } while (nextTokens())
     Program(result.toList)
   }
 
 
-  def parseBlockStatement() :BlockStatement ={
+  def parseBlockStatement(): BlockStatement = {
     val statements: ListBuffer[Statement] = ListBuffer()
-    while( nextTokens() && curToken!=RightBraceToken && curToken!=EOFToken) {
+    while (nextTokens() && curToken != RightBraceToken && curToken != EOFToken) {
       addStatement(statements, Some(parseStatement()))
     }
     BlockStatement(statements.toList)
