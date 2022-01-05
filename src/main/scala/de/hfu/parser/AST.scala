@@ -8,9 +8,13 @@ abstract class Node {
 abstract class Statement() extends Node
 abstract class Expression() extends Node
 case class Program(statements: List[Statement])
+case class BlockStatement(statements: List[Statement])
+
+case class  IfExpression(condition : Expression, consequence:BlockStatement, alternative:Option[BlockStatement]) extends Expression
+
 
 case class LetStatement(name :String, expression: Expression) extends Statement{
-  override def toString()="let "+name+" = "+expression
+  override def toString: String ="let "+name+" = "+expression
 }
 case class ReturnStatement(expression: Expression) extends Statement{
   override def toString()="return "+expression
@@ -28,3 +32,5 @@ case class Identifier(value: String) extends Expression{
 }
 case class PrefixExpression(operator: Token, right: Expression) extends Expression
 case class InfixExpression(operator: Token,left: Expression, right: Expression) extends Expression
+
+case class  FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression

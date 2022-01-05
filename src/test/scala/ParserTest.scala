@@ -27,48 +27,98 @@ class ParserTest extends AnyFunSuite {
     )
     check(testCases)
   }
+
+
+  private def checkExpressions(testCases: List[(String, Expression)]): Unit ={
+    for((input, expected)<-testCases){
+      val actual=new Parser(new TokenIterator(input)).parseExpression()
+      assert(actual==expected)
+    }
+  }
+
+
   test("parse integer expression") {
     val testCases=List(
-      ("5;", Program(List(ExpressionStatement(IntegerLiteral(5))))),
+      ("5", IntegerLiteral(5)),
     )
-    check(testCases)
+    checkExpressions(testCases)
   }
   test("parse boolean expression") {
     val testCases=List(
-      ("false;", Program(List(ExpressionStatement(BoolLiteral(false))))),
+      ("false", BoolLiteral(false)),
     )
-    check(testCases)
+    checkExpressions(testCases)
   }
   test("parse identifier expression") {
     val testCases=List(
-      ("foobar;", Program(List(ExpressionStatement(Identifier("foobar"))))),
+      ("foobar", Identifier("foobar")),
     )
-    check(testCases)
+    checkExpressions(testCases)
   }
 
   test("parse prefix expression") {
     val testCases=List(
-      ("!5;", Program(List(ExpressionStatement(PrefixExpression(BangToken, IntegerLiteral(5)))))),
-      ("!!5;", Program(List(ExpressionStatement(PrefixExpression(BangToken,PrefixExpression(BangToken,IntegerLiteral(5))))))),
-      ("!foobar;", Program(List(ExpressionStatement(PrefixExpression(BangToken, Identifier("foobar")))))),
-      ("-foobar;", Program(List(ExpressionStatement(PrefixExpression(MinusToken, Identifier("foobar")))))),
-      ("!true;", Program(List(ExpressionStatement(PrefixExpression(BangToken, BoolLiteral(true)))))),
-      ("!false;", Program(List(ExpressionStatement(PrefixExpression(BangToken, BoolLiteral(false)))))),
+      ("!5", PrefixExpression(BangToken, IntegerLiteral(5))),
+      ("!!5", PrefixExpression(BangToken,PrefixExpression(BangToken,IntegerLiteral(5)))),
+      ("!foobar", PrefixExpression(BangToken, Identifier("foobar"))),
+      ("-foobar", PrefixExpression(MinusToken, Identifier("foobar"))),
+      ("!true", PrefixExpression(BangToken, BoolLiteral(true))),
+      ("!false", PrefixExpression(BangToken, BoolLiteral(false)))
     )
-    check(testCases)
+    checkExpressions(testCases)
   }
 
   test("parse simple infix expression") {
     val testCases=List(
-      ("3+4;", Program(List(ExpressionStatement(InfixExpression(PlusToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3-4;", Program(List(ExpressionStatement(InfixExpression(MinusToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3*4;", Program(List(ExpressionStatement(InfixExpression(AsteriskToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3/4;", Program(List(ExpressionStatement(InfixExpression(SlashToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3<4;", Program(List(ExpressionStatement(InfixExpression(LessThenToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3>4;", Program(List(ExpressionStatement(InfixExpression(GreaterThenToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3==4;", Program(List(ExpressionStatement(InfixExpression(EqualsToken, IntegerLiteral(3), IntegerLiteral(4)))))),
-      ("3!=4;", Program(List(ExpressionStatement(InfixExpression(NotEqualsToken, IntegerLiteral(3), IntegerLiteral(4)))))),
+      ("3+4", InfixExpression(PlusToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3-4", InfixExpression(MinusToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3*4", InfixExpression(AsteriskToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3/4", InfixExpression(SlashToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3<4", InfixExpression(LessThenToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3>4", InfixExpression(GreaterThenToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3==4", InfixExpression(EqualsToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3!=4", InfixExpression(NotEqualsToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("foobar+barfoo", InfixExpression(PlusToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar-barfoo", InfixExpression(MinusToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar*barfoo", InfixExpression(AsteriskToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar/barfoo", InfixExpression(SlashToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar<barfoo", InfixExpression(LessThenToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar>barfoo;", InfixExpression(GreaterThenToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar==barfoo", InfixExpression(EqualsToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar!=barfoo", InfixExpression(NotEqualsToken, Identifier("foobar"), Identifier("barfoo"))),
     )
-    check(testCases)
+    checkExpressions(testCases)
+  }
+
+  test("parse infix expressions with precedences") {
+    val testCases=List(
+
+      ("-a * b", PrefixExpression(MinusToken,InfixExpression(AsteriskToken,Identifier("a"),Identifier("b")))),
+      ("!-a", PrefixExpression(BangToken,PrefixExpression(MinusToken,Identifier("a")))),
+      ("2+3+4", InfixExpression(PlusToken,InfixExpression(PlusToken, IntegerLiteral(2), IntegerLiteral(3)),IntegerLiteral(4))),
+      ("2*3+4", InfixExpression(PlusToken,InfixExpression(AsteriskToken, IntegerLiteral(2), IntegerLiteral(3)),IntegerLiteral(4))),
+      ("2*(3+4)", InfixExpression(AsteriskToken, IntegerLiteral(2),InfixExpression(PlusToken, IntegerLiteral(3), IntegerLiteral(4)))),
+    )
+    checkExpressions(testCases)
+  }
+
+
+  test("parse if expressions") {
+    val testCases=List(
+
+      ("if (x < y) { x }", IfExpression(InfixExpression(LessThenToken,Identifier("x"),Identifier("y")),BlockStatement(List(ExpressionStatement(Identifier("x")))),None)),
+      ("if (x < y) { x }else{y}", IfExpression(InfixExpression(LessThenToken,Identifier("x"),Identifier("y")),BlockStatement(List(ExpressionStatement(Identifier("x")))),Some(BlockStatement(List(ExpressionStatement(Identifier("y"))))))),
+    )
+    checkExpressions(testCases)
+  }
+
+
+  test("parse function definition expressions") {
+    val testCases=List(
+
+      ("fn(x, y) { x + y; }", FunctionLiteral(List(Identifier("x"), Identifier("y")),BlockStatement(List(ExpressionStatement(InfixExpression(PlusToken,Identifier("x"),Identifier("y"))))))),
+      ("fn() {}", FunctionLiteral(List(),BlockStatement(List()))),
+    )
+    checkExpressions(testCases)
   }
 }
