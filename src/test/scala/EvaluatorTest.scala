@@ -21,8 +21,7 @@ class EvaluatorTest extends AnyFunSuite {
       ("3-2", 1),
       ("1+2+3", 6),
       ("2 * 2 * 2 * 2 * 2", 32),
-      ("-49 + 100 + -50", 1),  // TODO: fix this
-      // Program(List(ExpressionStatement(PrefixExpression(-,InfixExpression(+,InfixExpression(+,IntegerLiteral(49),IntegerLiteral(100)),PrefixExpression(-,IntegerLiteral(50)))))))
+      ("-49 + 100 + -50", 1),
       ("5 * 2 + 10", 20),
       ("5 + 2 * 10", 25),
       ("20 + 2 * -10", 0),

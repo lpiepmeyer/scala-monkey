@@ -2,6 +2,8 @@ import de.hfu.lexer._
 import de.hfu.parser._
 import org.scalatest.funsuite.AnyFunSuite
 
+// TODO: add more tests
+
 class ParserTest extends AnyFunSuite {
 
   private def check(testCases: List[(String, Program)]): Unit = {
@@ -110,7 +112,7 @@ class ParserTest extends AnyFunSuite {
   test("parse infix expressions with precedences") {
     val testCases = List(
         ("-49 + 100 + -50", InfixExpression(PlusToken,InfixExpression(PlusToken,PrefixExpression(MinusToken,IntegerLiteral(49)),IntegerLiteral(100)),PrefixExpression(MinusToken,IntegerLiteral(50)))),
-        ("-a * b", PrefixExpression(MinusToken, InfixExpression(AsteriskToken, Identifier("a"), Identifier("b")))),
+        ("-a * b", InfixExpression(AsteriskToken,PrefixExpression(MinusToken,Identifier("a")),Identifier("b"))),
         ("!-a", PrefixExpression(BangToken, PrefixExpression(MinusToken, Identifier("a")))),
         ("2+3+4", InfixExpression(PlusToken, InfixExpression(PlusToken, IntegerLiteral(2), IntegerLiteral(3)), IntegerLiteral(4))),
         ("2*3+4", InfixExpression(PlusToken, InfixExpression(AsteriskToken, IntegerLiteral(2), IntegerLiteral(3)), IntegerLiteral(4))),

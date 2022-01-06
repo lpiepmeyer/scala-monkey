@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 
 object Precedence extends Enumeration {
   type Precedence = Value
-  val LOWEST, EQUALS, LESSGREATER, SUM, PREFIX, PRODUCT, CALL = Value
+  val LOWEST, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL = Value
 }
 
 class Parser(val lexer: TokenIterator) {
