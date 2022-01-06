@@ -2,7 +2,7 @@ import de.hfu.lexer._
 import org.scalatest.funsuite.AnyFunSuite
 
 class TokenIteratorTest extends AnyFunSuite {
-  val code =
+  private val code =
     """let five = 5;
       |let ten = 10;
       |

@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 
 object Precedence extends Enumeration {
   type Precedence = Value
-  val LOWEST, EQUALS, LESSGREATER, SUM, PRODUCT, CALL = Value
+  val LOWEST, EQUALS, LESSGREATER, SUM, PREFIX, PRODUCT, CALL = Value
 }
 
 class Parser(val lexer: TokenIterator) {
@@ -196,7 +196,7 @@ class Parser(val lexer: TokenIterator) {
 
   private def parseExpression(precedence: Precedence = LOWEST): Expression = {
     var leftExpression = createPrefix()
-
+val x=peekPrecedence()
     while (peekToken != SemicolonToken && precedence < peekPrecedence()) {
       nextTokens()
       leftExpression = createInfix(leftExpression)
@@ -209,7 +209,7 @@ class Parser(val lexer: TokenIterator) {
     val token = curToken
     if (!nextTokens())
       throw new RuntimeException
-    val expression = parseExpression()
+    val expression = parseExpression(PREFIX)
     PrefixExpression(token, expression)
   }
 

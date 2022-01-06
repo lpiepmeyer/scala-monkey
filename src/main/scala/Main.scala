@@ -6,6 +6,6 @@ object Main extends App {
   val sum=SUM
   println(eq)
   println(sum)
-  println(eq<sum)
+  println(PREFIX<PRODUCT)
 }
 

@@ -8,9 +8,9 @@ abstract class Statement() extends Node
 
 abstract class Expression() extends Node
 
-case class Program(statements: List[Statement])
+case class Program(statements: List[Statement]) extends Node
 
-case class BlockStatement(statements: List[Statement])
+case class BlockStatement(statements: List[Statement])extends Node
 
 case class IfExpression(condition: Expression, consequence: BlockStatement, alternative: Option[BlockStatement]) extends Expression
 
