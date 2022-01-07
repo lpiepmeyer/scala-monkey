@@ -19,14 +19,19 @@ object Main {
 
   private def execute(filename: String): Unit = {
     val reader = new FileReader(filename)
-    val actual = Evaluator(new Parser(TokenIterator(reader)).parseProgram(), new Context)
+    val actual = Evaluator(new Parser(TokenIterator(reader)).parseProgram(), Context())
     println(actual)
   }
 
-  def repl(): Unit = {
-    val context = new Context()
+  private def repl(): Unit = {
+    println("starting REPL")
+    val context = Context()
     while (true) {
       val input = readLine(">> ")
+      if (input.trim() == "exit") {
+        println("terminating REPL")
+        return
+      }
       val actual = Evaluator(new Parser(TokenIterator(input)).parseProgram(), context)
       println(actual)
     }

@@ -1,4 +1,4 @@
-import de.hfu.evaluator.{BooleanValue, Evaluator, IntegerValue, NoValue, Value}
+import de.hfu.evaluator._
 import de.hfu.lexer._
 import de.hfu.parser._
 import org.scalatest.funsuite.AnyFunSuite
@@ -8,7 +8,7 @@ class EvaluatorTest extends AnyFunSuite {
 
   private def check(testCases: List[(String, Value)]): Unit ={
     for((input, expected)<-testCases){
-      val actual=Evaluator(new Parser( TokenIterator(input)).parseProgram())
+      val actual = Evaluator(new Parser(TokenIterator(input)).parseProgram(), Context())
       assert(actual==expected)
     }
   }
@@ -118,11 +118,23 @@ class EvaluatorTest extends AnyFunSuite {
   }
 
   test("evaluate let statements") {
-    val testCases=List(
+    val testCases = List(
       ("let a = 5; a;", 5),
       ("let a = 5 * 5; a;", 25),
       ("let a = 5; let b = a; b;", 5),
       ("let a = 5; let b = a; let c = a + b + 5; c;", 15),
+    )
+    checkIntegerValues(testCases)
+  }
+
+  test("evaluate function calls statements") {
+    val testCases = List(
+      ("let identity = fn(x) { x; }; identity(5);", 5),
+      ("let identity = fn(x) { return x; }; identity(5);", 5),
+      ("let double = fn(x) { x * 2; }; double(5);", 10),
+      ("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
+      ("let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20),
+      ("fn(x) { x; }(5)", 5),
     )
     checkIntegerValues(testCases)
   }

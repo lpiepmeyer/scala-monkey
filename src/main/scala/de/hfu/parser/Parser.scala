@@ -201,7 +201,7 @@ class Parser(val lexer: TokenIterator) {
   }
 
 
-  private def parsePrefixExpression(): Expression = {
+  private def parsePrefixExpression(): PrefixExpression = {
     val token = currentToken
     if (!nextTokens())
       throw new RuntimeException
