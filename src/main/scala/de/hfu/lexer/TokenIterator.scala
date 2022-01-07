@@ -1,14 +1,16 @@
 package de.hfu.lexer
 
-import java.io.{StreamTokenizer, StringReader}
+import java.io.{Reader, StreamTokenizer, StringReader}
 import scala.collection.mutable.ListBuffer
+object TokenIterator{
+  def apply(reader: Reader):TokenIterator=new TokenIterator(new StreamTokenizer(reader))
+  def apply(input: String):TokenIterator=apply(new StringReader(input))
+}
+class TokenIterator private(val tokenizer: StreamTokenizer) extends Iterator[(Token, Token)]{
 
-class TokenIterator(val input: String) extends Iterator[(Token, Token)]{
+  private class Lexer(val tokenizer: StreamTokenizer) {
 
-  private class Lexer(val input: String) {
-
-    private val charToToken = Map('+' -> PlusToken, '-' -> MinusToken, '*' -> AsteriskToken, '/' -> SlashToken, '!' -> BangToken, '(' -> LeftParenthesisToken, ')' -> RightParenthesisToken, '{' -> LeftBraceToken, '}' -> RightBraceToken, '<' -> LessThenToken, '>' -> GreaterThenToken, 0 -> EOFToken, ';' -> SemicolonToken, ',' -> CommaToken, '=' -> AssignmentToken)
-    private val tokenizer = new StreamTokenizer(new StringReader(input))
+    private val charToToken = Map('+' -> PlusToken, '-' -> MinusToken, '*' -> AsteriskToken, '/' -> SlashToken, '!' -> BangToken, '(' -> LeftParenthesisToken, ')' -> RightParenthesisToken, '{' -> LeftBraceToken, '}' -> RightBraceToken, '<' -> LessThanToken, '>' -> GreaterThanToken, 0 -> EOFToken, ';' -> SemicolonToken, ',' -> CommaToken, '=' -> AssignmentToken)
     tokenizer.slashStarComments(false)
     tokenizer.slashSlashComments(false)
     tokenizer.ordinaryChar('/')
@@ -40,8 +42,11 @@ class TokenIterator(val input: String) extends Iterator[(Token, Token)]{
     }
   }
 
-  private val lexer=new Lexer(input)
+  private val lexer=new Lexer(tokenizer)
   private val firstThree =(1 to 3).map(_ =>lexer.nextToken()).to(ListBuffer)
+
+  def currentToken=firstThree.head
+  def peekToken=firstThree(1)
 
   override def hasNext: Boolean =
     !(firstThree(1)==EOFToken && firstThree(2)==EOFToken)

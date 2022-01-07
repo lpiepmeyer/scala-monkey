@@ -8,7 +8,7 @@ class ParserTest extends AnyFunSuite {
 
   private def check(testCases: List[(String, Program)]): Unit = {
     for ((input, expected) <- testCases) {
-      val actual = new Parser(new TokenIterator(input)).parseProgram()
+      val actual = new Parser( TokenIterator(input)).parseProgram()
       assert(actual == expected)
     }
   }
@@ -16,7 +16,7 @@ class ParserTest extends AnyFunSuite {
 
   private def checkExpressions(testCases: List[(String, Expression)]): Unit = {
     for ((input, expected) <- testCases) {
-      val actual = new Parser(new TokenIterator(input + ";")).parseProgram()
+      val actual = new Parser( TokenIterator(input + ";")).parseProgram()
       assert(actual == Program(List(ExpressionStatement(expected))))
     }
   }
@@ -92,16 +92,16 @@ class ParserTest extends AnyFunSuite {
       ("3-4", InfixExpression(MinusToken, IntegerLiteral(3), IntegerLiteral(4))),
       ("3*4", InfixExpression(AsteriskToken, IntegerLiteral(3), IntegerLiteral(4))),
       ("3/4", InfixExpression(SlashToken, IntegerLiteral(3), IntegerLiteral(4))),
-      ("3<4", InfixExpression(LessThenToken, IntegerLiteral(3), IntegerLiteral(4))),
-      ("3>4", InfixExpression(GreaterThenToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3<4", InfixExpression(LessThanToken, IntegerLiteral(3), IntegerLiteral(4))),
+      ("3>4", InfixExpression(GreaterThanToken, IntegerLiteral(3), IntegerLiteral(4))),
       ("3==4", InfixExpression(EqualsToken, IntegerLiteral(3), IntegerLiteral(4))),
       ("3!=4", InfixExpression(NotEqualsToken, IntegerLiteral(3), IntegerLiteral(4))),
       ("foobar+barfoo", InfixExpression(PlusToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar-barfoo", InfixExpression(MinusToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar*barfoo", InfixExpression(AsteriskToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar/barfoo", InfixExpression(SlashToken, Identifier("foobar"), Identifier("barfoo"))),
-      ("foobar<barfoo", InfixExpression(LessThenToken, Identifier("foobar"), Identifier("barfoo"))),
-      ("foobar>barfoo", InfixExpression(GreaterThenToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar<barfoo", InfixExpression(LessThanToken, Identifier("foobar"), Identifier("barfoo"))),
+      ("foobar>barfoo", InfixExpression(GreaterThanToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar==barfoo", InfixExpression(EqualsToken, Identifier("foobar"), Identifier("barfoo"))),
       ("foobar!=barfoo", InfixExpression(NotEqualsToken, Identifier("foobar"), Identifier("barfoo"))),
     )
@@ -125,8 +125,8 @@ class ParserTest extends AnyFunSuite {
   test("parse if expressions") {
     val testCases = List(
 
-      ("if (x < y) { x }", IfExpression(InfixExpression(LessThenToken, Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(Identifier("x")))), None)),
-      ("if (x < y) { x }else{y}", IfExpression(InfixExpression(LessThenToken, Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(Identifier("x")))), Some(BlockStatement(List(ExpressionStatement(Identifier("y"))))))),
+      ("if (x < y) { x }", IfExpression(InfixExpression(LessThanToken, Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(Identifier("x")))), None)),
+      ("if (x < y) { x }else{y}", IfExpression(InfixExpression(LessThanToken, Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(Identifier("x")))), Some(BlockStatement(List(ExpressionStatement(Identifier("y"))))))),
     )
     checkExpressions(testCases)
   }

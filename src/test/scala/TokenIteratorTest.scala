@@ -67,15 +67,15 @@ class TokenIteratorTest extends AnyFunSuite {
     IntegerToken("5"),
     SemicolonToken,
     IntegerToken("5"),
-    LessThenToken,
+    LessThanToken,
     IntegerToken("10"),
-    GreaterThenToken,
+    GreaterThanToken,
     IntegerToken("5"),
     SemicolonToken,
     IfToken,
     LeftParenthesisToken,
     IntegerToken("5"),
-    LessThenToken,
+    LessThanToken,
     IntegerToken("10"),
     RightParenthesisToken,
     LeftBraceToken,
@@ -103,7 +103,7 @@ class TokenIteratorTest extends AnyFunSuite {
   )
 
   test("all tokens") {
-    for((i,(token,_)) <- Iterator.from(0).zip(new TokenIterator(code).toSeq)){
+    for((i,(token,_)) <- Iterator.from(0).zip( TokenIterator(code).toSeq)){
       assert(token==expected(i))
     }
   }
