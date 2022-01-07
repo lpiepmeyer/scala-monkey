@@ -8,7 +8,7 @@ import de.hfu.parser._
 class Context {
   private val variables = scala.collection.mutable.HashMap[String, Value]()
 
-  def apply(name: String) = variables(name)
+  def apply(name: String): Value = variables(name)
 
   def update(name: String, value: Value): Value = {
     variables(name) = value

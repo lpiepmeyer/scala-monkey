@@ -13,13 +13,12 @@ class EvaluatorTest extends AnyFunSuite {
     }
   }
 
-  private def checkBooleanValues(testCases: List[(String, Boolean)])=
+  private def checkBooleanValues(testCases: List[(String, Boolean)]): Unit =
     check(testCases.map(pair=>(pair._1, BooleanValue(pair._2))))
 
 
-  private def checkIntegerValues(testCases: List[(String, Int)]): Unit ={
+  private def checkIntegerValues(testCases: List[(String, Int)]): Unit =
     check(testCases.map(pair=>(pair._1, IntegerValue(pair._2))))
-  }
 
 
   test("evaluate integer expressions") {

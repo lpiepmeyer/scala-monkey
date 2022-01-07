@@ -7,7 +7,7 @@ import de.hfu.parser.Parser
 import java.io.FileReader
 
 object Main {
-  def execute(filename:String) {
+  private def execute(filename:String): Unit = {
     val reader=new FileReader(filename)
     val actual = Evaluator(new Parser(TokenIterator(reader)).parseProgram(),new Context)
     println(actual)

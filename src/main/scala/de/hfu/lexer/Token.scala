@@ -5,7 +5,7 @@ sealed abstract class Token( val text:String){
 }
 
 object Token{
-  val keywords=List(FunctionToken,LetToken,TrueToken,FalseToken,IfToken,ElseToken,ReturnToken)
+  private val keywords=List(FunctionToken,LetToken,TrueToken,FalseToken,IfToken,ElseToken,ReturnToken)
     .map(token=>token.toString.toLowerCase->token)
     .toMap
   def lookupIdent(ident :String) :Token =

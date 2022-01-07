@@ -45,8 +45,8 @@ class TokenIterator private(val tokenizer: StreamTokenizer) extends Iterator[(To
   private val lexer=new Lexer(tokenizer)
   private val firstThree =(1 to 3).map(_ =>lexer.nextToken()).to(ListBuffer)
 
-  def currentToken=firstThree.head
-  def peekToken=firstThree(1)
+  def currentToken: Token =firstThree.head
+  def peekToken:Token=firstThree(1)
 
   override def hasNext: Boolean =
     !(firstThree(1)==EOFToken && firstThree(2)==EOFToken)
