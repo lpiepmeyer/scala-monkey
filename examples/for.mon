@@ -1,9 +1,14 @@
 let for = fn(from, to, body, accu) {
-  if (from>to) {
-    return accu
+  return if (from>to) {
+     accu
   } else {
-    return for(from+1, to, accu(from))
+     for(from+1, to, body, body(accu,from))
   }
 };
 
-let f = fn(x) { x; };
+let f = fn(a,b) {
+    a+b
+};
+
+for(1,100,fn(a,b){a+b},0)
+for(1,5,fn(a,b){a*b},1)
