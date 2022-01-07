@@ -1,0 +1,9 @@
+let for = fn(from, to, body, accu) {
+  if (from>to) {
+    return accu
+  } else {
+    return for(from+1, to, accu(from))
+  }
+};
+
+let f = fn(x) { x; };

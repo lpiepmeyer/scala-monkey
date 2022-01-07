@@ -65,12 +65,16 @@ object Evaluator {
 
   def evaluateCall(identifier: Expression, arguments: List[Expression], outerContext: Context): Value = {
     val evaluatedArguments = arguments.map(apply(_, outerContext))
-    apply(identifier, outerContext) match {
+    val result = apply(identifier, outerContext) match {
       case FunctionValue(parameters, body) =>
         val variables = parameters.map(_.value).zip(evaluatedArguments)
         val context = outerContext.extend(collection.mutable.Map(variables: _*))
         apply(body, context)
       case _ => throw new RuntimeException
+    }
+    result match {
+      case ReturnValue(value) => value
+      case value => value
     }
   }
 

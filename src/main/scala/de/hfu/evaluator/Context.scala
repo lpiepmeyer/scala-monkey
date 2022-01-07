@@ -12,11 +12,11 @@ class Context private(private val variables: mutable.Map[String, Value] = mutabl
 
   def extend(extendedVariables: mutable.Map[String, Value]) = new Context(extendedVariables, Some(this))
 
-  def apply(name: String): Option[Value] = outerContext match {
-    case None => variables.get(name)
-    case Some(context) => context(name) match {
-      case None => variables.get(name)
-      case value => value
+  def apply(name: String): Option[Value] = variables.get(name) match {
+    case Some(value) => Some(value)
+    case None => outerContext match {
+      case None => None
+      case Some(context) => context(name)
     }
   }
 
