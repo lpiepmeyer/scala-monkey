@@ -3,25 +3,6 @@ package de.hfu.evaluator
 import de.hfu.lexer._
 import de.hfu.parser._
 
-
-
-class Context {
-  private val variables = scala.collection.mutable.HashMap[String, Value]()
-
-  def apply(name: String): Value = variables(name)
-
-  def update(name: String, value: Value): Value = {
-    variables(name) = value
-    value
-  }
-}
-
-abstract class Value
-case class BooleanValue(v:Boolean) extends Value
-case class IntegerValue(v:Int) extends Value
-case object NoValue extends Value
-case class ReturnValue(value: Value) extends Value
-
 object Evaluator {
   def apply(node: Node, context: Context = new Context): Value =
     evaluateNode(node, context) match {
