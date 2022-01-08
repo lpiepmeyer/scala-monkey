@@ -2,7 +2,7 @@ package de.hfu.repl
 
 import de.hfu.evaluator.{Context, Evaluator}
 import de.hfu.lexer.TokenIterator
-import de.hfu.parser.Parser
+import de.hfu.parser.Program
 
 import java.io.FileReader
 import scala.io.StdIn.readLine
@@ -19,7 +19,7 @@ object Main {
 
   private def execute(filename: String): Unit = {
     val reader = new FileReader(filename)
-    val actual = Evaluator(new Parser(TokenIterator(reader)).parseProgram(), Context())
+    val actual = Evaluator(Program(TokenIterator(reader)), Context())
     println(actual)
   }
 
@@ -32,7 +32,7 @@ object Main {
         println("terminating REPL")
         return
       }
-      val actual = Evaluator(new Parser(TokenIterator(input)).parseProgram(), context)
+      val actual = Evaluator(Program(TokenIterator(input)), context)
       println(actual)
     }
   }

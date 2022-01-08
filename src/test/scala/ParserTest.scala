@@ -8,7 +8,7 @@ class ParserTest extends AnyFunSuite {
 
   private def check(testCases: List[(String, Program)]): Unit = {
     for ((input, expected) <- testCases) {
-      val actual = new Parser( TokenIterator(input)).parseProgram()
+      val actual = Program(TokenIterator(input))
       assert(actual == expected)
     }
   }
@@ -16,18 +16,10 @@ class ParserTest extends AnyFunSuite {
 
   private def checkExpressions(testCases: List[(String, Expression)]): Unit = {
     for ((input, expected) <- testCases) {
-      val actual = new Parser( TokenIterator(input + ";")).parseProgram()
+      val actual = Program(TokenIterator(input + ";"))
       assert(actual == Program(List(ExpressionStatement(expected))))
     }
   }
-  /*
-    private def checkExpressions(testCases: List[(String, Expression)]): Unit ={
-      for((input, expected)<-testCases){
-        val actual=new Parser(new TokenIterator(input)).parseExpression()
-        assert(actual==expected)
-      }
-    }
-   */
 
   test("parse let expression") {
     val testCases = List(

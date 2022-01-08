@@ -8,7 +8,7 @@ class EvaluatorTest extends AnyFunSuite {
 
   private def check(testCases: List[(String, Value)]): Unit ={
     for((input, expected)<-testCases){
-      val actual = Evaluator(new Parser(TokenIterator(input)).parseProgram(), Context())
+      val actual = Evaluator(Program(TokenIterator(input)), Context())
       assert(actual==expected)
     }
   }
