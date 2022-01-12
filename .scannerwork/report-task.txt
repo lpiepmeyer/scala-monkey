@@ -1,0 +1,6 @@
+projectKey=monkey
+serverUrl=http://localhost:9000
+serverVersion=9.2.4.50792
+dashboardUrl=http://localhost:9000/dashboard?id=monkey
+ceTaskId=AX5Db_bGStdL96rbIU94
+ceTaskUrl=http://localhost:9000/api/ce/task?id=AX5Db_bGStdL96rbIU94

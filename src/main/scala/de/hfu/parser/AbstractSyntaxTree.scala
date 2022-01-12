@@ -5,6 +5,8 @@ import de.hfu.lexer.{Precedence => _, _}
 
 import scala.collection.mutable.ListBuffer
 
+// https://github.com/lionell/monkey-in-java
+
 abstract class Node {}
 
 object Statement {
@@ -19,12 +21,12 @@ abstract class Statement() extends Node
 
 object Expression {
   def apply(lexer: TokenIterator, precedence: Precedence = LOWEST): Expression = {
-    var leftExpression = createPrefix(lexer)
-    while (lexer.peekToken != SemicolonToken && precedence < lexer.peekPrecedence()) {
+    var result = createPrefix(lexer)
+    while (precedence < lexer.peekPrecedence()) {
       lexer.nextTokens()
-      leftExpression = createInfix(lexer, leftExpression)
+      result = createInfix(lexer, result)
     }
-    leftExpression
+    result
   }
 
   private def parseGroupedExpression(lexer: TokenIterator): Expression = {
@@ -57,11 +59,11 @@ abstract class Expression() extends Node
 
 object Program {
   def apply(lexer: TokenIterator): Program = {
-    val result: ListBuffer[Statement] = ListBuffer()
+    val statements: ListBuffer[Statement] = ListBuffer()
     do {
-      result.addOne(Statement(lexer))
+      statements.addOne(Statement(lexer))
     } while (lexer.nextTokens())
-    Program(result.toList)
+    Program(statements.toList)
   }
 }
 
@@ -107,7 +109,7 @@ object LetStatement {
     (lexer.currentToken, lexer.peekToken) match {
       case (identifier: IdentifierToken, AssignmentToken) if lexer.nextTokens() && lexer.nextTokens() =>
         val expression = Expression(lexer)
-        if (lexer.peekToken == SemicolonToken) lexer.nextTokens()
+        lexer.skipSemicolon()
         LetStatement(identifier.literal, expression)
       case _ => throw new RuntimeException
     }
@@ -120,7 +122,7 @@ object ReturnStatement {
   def apply(lexer: TokenIterator): ReturnStatement = {
     if (!lexer.nextTokens()) throw new RuntimeException
     val expression = Expression(lexer)
-    if (lexer.peekToken == SemicolonToken) lexer.nextTokens()
+    lexer.skipSemicolon()
     ReturnStatement(expression)
   }
 }

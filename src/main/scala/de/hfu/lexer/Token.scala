@@ -24,7 +24,9 @@ case object AsteriskToken extends Token("*")
 case object SlashToken extends Token("/")
 case object LessThanToken extends Token("<")
 case object GreaterThanToken extends Token(">")
-case object EqualsToken extends Token("=")
+
+case object EqualsToken extends Token("==")
+
 case object NotEqualsToken extends Token("!=")
 case object CommaToken extends Token(",")
 case object SemicolonToken extends Token(";")

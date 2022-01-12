@@ -5,7 +5,6 @@ import de.hfu.parser._
 
 object Evaluator {
 
-
   def apply(node: Node, context: Context): Value = node match {
     case Program(statements) => evaluateStatements(statements, unwrap = true, context)
     case BlockStatement(statements) => evaluateStatements(statements, unwrap = false, context)

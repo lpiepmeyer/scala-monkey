@@ -70,6 +70,13 @@ class TokenIterator private(val tokenizer: StreamTokenizer) extends Iterator[(To
 
   def curPrecedence(): Precedence = getPrecedence(currentToken)
 
+  def skipSemicolon() =
+    if (peekToken == SemicolonToken) {
+      nextTokens()
+      nextTokens()
+    }
+
+
   private def getPrecedence(token: Token) = precedences.get(token) match {
     case None => LOWEST
     case Some(precedence) => precedence
@@ -78,6 +85,12 @@ class TokenIterator private(val tokenizer: StreamTokenizer) extends Iterator[(To
   def expectPeek(token: Token): Unit = {
     if (peekToken != token)
       throw new RuntimeException
+    nextTokens()
+  }
+
+  def expectCurrent(token: Token): Unit = {
+    if (currentToken != token)
+      throw new RuntimeException("found " + currentToken + " expected " + token)
     nextTokens()
   }
 
