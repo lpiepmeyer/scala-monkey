@@ -51,12 +51,6 @@ class ParserTest extends AnyFunSuite {
     }
   }
 
-  test("parse identifier literal") {
-    val testCases = List(
-      ("foobar;", Identifier("foobar")),
-    )
-    checkIdentifier(testCases)
-  }
 
 
   private def checkParameterList(testCases: List[(String, ParameterList)]): Unit = {
@@ -141,7 +135,7 @@ class ParserTest extends AnyFunSuite {
     checkExpressions(testCases)
   }
 
-
+/*
   test("parse prefix expression") {
     val testCases = List(
       ("!5", PrefixExpression(BangToken, IntegerLiteral(5))),
@@ -189,10 +183,10 @@ class ParserTest extends AnyFunSuite {
     )
     checkExpressions(testCases)
   }
-
+*/
 
   test("parse if expressions") {
-    println(IfExpression(TokenIterator("if (x < y) { x }")))
+    println(IfExpression(TokenIterator("if (x < y) { x }else{y}")))
     /*   val testCases = List(
 
          ("if (x < y) { x }", IfExpression(InfixExpression(LessThanToken, Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(Identifier("x")))), None)),
@@ -203,41 +197,27 @@ class ParserTest extends AnyFunSuite {
      */
   }
 
-
-  test("parse function definition expressions") {
-    val testCases = List(
-
-      ("fn(x, y) { x + y; }", FunctionLiteral(List(Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(InfixExpression(PlusToken, Identifier("x"), Identifier("y"))))))),
-      ("fn() {}", FunctionLiteral(List(), BlockStatement(List()))),
-    )
-    checkExpressions(testCases)
-  }
-
   /*
-    test("parse call  expressions") {
+    test("parse function definition expressions") {
       val testCases = List(
-        ("add(1, 2 * 3, 4 + 5)", CallExpression(Identifier("add"), List(IntegerLiteral(1), InfixExpression(AsteriskToken, IntegerLiteral(2), IntegerLiteral(3)), InfixExpression(PlusToken, IntegerLiteral(4), IntegerLiteral(5))))),
+
+        ("fn(x, y) { x + y; }", FunctionLiteral(List(Identifier("x"), Identifier("y")), BlockStatement(List(ExpressionStatement(InfixExpression(PlusToken, Identifier("x"), Identifier("y"))))))),
+        ("fn() {}", FunctionLiteral(List(), BlockStatement(List()))),
       )
       checkExpressions(testCases)
     }
-    */
 
-  private def checkDashTerm(testCases: List[String]): Unit = {
-    for (expected <- testCases) {
-      val lexer = TokenIterator(expected + ";")
-      assert(DashTerm(lexer).toString == expected)
-      assert(lexer.currentToken == SemicolonToken)
-    }
-  }
 
-  test("parse dashterm  ") {
-    val testCases = List(
-      "foo+bar",
-      "2+3-4",
-      "2+3*4-4/5",
-    )
-    checkDashTerm(testCases)
-  }
+      test("parse call  expressions") {
+        val testCases = List(
+          ("add(1, 2 * 3, 4 + 5)", CallExpression(Identifier("add"), List(IntegerLiteral(1), InfixExpression(AsteriskToken, IntegerLiteral(2), IntegerLiteral(3)), InfixExpression(PlusToken, IntegerLiteral(4), IntegerLiteral(5))))),
+        )
+        checkExpressions(testCases)
+      }
+      */
+
+
+
 
 
   private def checkPointTerm(testCases: List[String]): Unit = {
@@ -327,6 +307,52 @@ class ParserTest extends AnyFunSuite {
      */
   }
 
+  //private def processTests(test:List[String], )
+
+  def processTests(tests: List[String], parser: TokenIterator => Expression): Unit = {
+    for (test <- tests) {
+      val lexer = TokenIterator(test)
+      val actual = parser(lexer).toString
+      assert(actual == test)
+      assert(lexer.currentToken == EOFToken)
+    }
+  }
+
+  test("parse function literal   ") {
+    val tests = List(
+      "fn(a, b){\n\ta + b;\n}",
+      "fn(){}"
+    )
+    processTests(tests, t => FunctionLiteral(t))
+  }
+
+  test("parse identifier literal") {
+    val tests = List(
+      ("foobar"),
+    )
+    processTests(tests, t => Identifier(t))
+  }
+
+
+  test("parse call  expressions") {
+    val tests = List(
+      "add(1, 2 * 3, 4 + 5)",
+      "add()",
+      "add(foobar)",
+    )
+    processTests(tests, t => CallExpression(t))
+  }
+
+  test("parse dashterm  ") {
+    val tests = List(
+      "foo + bar",
+      "2 + 3 - 4",
+      "2 + 3 * 4 - 4 / 5",
+      "2 + foo - bar",
+      "2 * (3 + 4)",
+    )
+    processTests(tests, t => DashTerm(t))
+  }
 }
 
 

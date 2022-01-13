@@ -1,10 +1,7 @@
 package de.hfu.topdown
 
+import de.hfu.evaluator.{BooleanValue, IntegerValue}
 import de.hfu.lexer.{Precedence => _, _}
-
-import scala.collection.mutable.ListBuffer
-
-// https://github.com/lionell/monkey-in-java
 
 abstract class Node {}
 
@@ -19,32 +16,7 @@ object Statement {
 abstract class Statement() extends Node
 
 object Expression {
-  private def createPrefix(lexer: TokenIterator): Expression = lexer.currentToken match {
-    case IntegerToken(literal) => IntegerLiteral(literal.toInt)
-    case TrueToken => BoolLiteral(true)
-    case FalseToken => BoolLiteral(false)
-    case IdentifierToken(name) => Identifier(name)
-    case LeftParenthesisToken => parseGroupedExpression(lexer)
-    case IfToken => IfExpression(lexer)
-    case FunctionToken => FunctionLiteral(lexer)
-    case BangToken | MinusToken => PrefixExpression(lexer)
-    case _ => throw new RuntimeException
-  }
-
-  private def parseGroupedExpression(lexer: TokenIterator): Expression = {
-    lexer.nextTokens()
-    val result = Expression(lexer)
-    lexer.expectPeek(RightParenthesisToken)
-    result
-  }
-
   def apply(lexer: TokenIterator): Expression = Equality(lexer)
-
-  private def createInfix(lexer: TokenIterator, leftExpression: Expression): Expression = lexer.currentToken match {
-    case PlusToken | MinusToken | SlashToken | AsteriskToken | EqualsToken | NotEqualsToken | LessThanToken | GreaterThanToken => InfixExpression(lexer, leftExpression)
-    //   case LeftParenthesisToken => CallExpression(lexer, leftExpression)
-    case _ => leftExpression
-  }
 }
 
 abstract class Expression() extends Node
@@ -57,7 +29,7 @@ object Program {
 }
 
 case class Program(statements: List[Statement]) extends Node {
-  override def toString: String = statements.mkString(";\n") + (if (!statements.isEmpty) ";")
+  override def toString: String = statements.mkString(";\n") + (if (statements.nonEmpty) ";")
 }
 
 object StatementList {
@@ -76,14 +48,21 @@ object StatementList {
 object BlockStatement {
   def apply(lexer: TokenIterator): BlockStatement = {
     lexer.expectCurrent(LeftBraceToken)
-    val result = BlockStatement(StatementList(lexer, RightBraceToken))
+    val statements = lexer.currentToken match {
+      case RightBraceToken => List()
+      case _ => StatementList(lexer, RightBraceToken)
+    }
+    val result = BlockStatement(statements)
     lexer.expectCurrent(RightBraceToken)
     result
   }
 }
 
 case class BlockStatement(statements: List[Statement]) extends Node {
-  override def toString: String = "{\n\t" + statements.mkString(";\n") + (if (!statements.isEmpty) ";") + "\n}"
+  override def toString: String = statements match {
+    case List() => "{}"
+    case _ => "{\n\t" + statements.mkString(";\n") + (if (statements.nonEmpty) ";") + "\n}"
+  }
 }
 
 object IfExpression {
@@ -95,9 +74,9 @@ object IfExpression {
     lexer.expectCurrent(RightParenthesisToken)
     if (lexer.currentToken != LeftBraceToken) throw new RuntimeException("found " + lexer.currentToken + " expected " + LeftBraceToken)
     val consequence = BlockStatement(lexer)
-    if (lexer.peekToken == ElseToken) {
+    if (lexer.currentToken == ElseToken) {
       lexer.nextTokens()
-      lexer.expectPeek(LeftBraceToken)
+      if (lexer.currentToken != LeftBraceToken) throw new RuntimeException("found " + lexer.currentToken + " expected " + LeftBraceToken)
       val alternative = BlockStatement(lexer)
       return IfExpression(condition, consequence, Some(alternative))
     }
@@ -167,6 +146,8 @@ object BoolLiteral {
 
 case class BoolLiteral(value: Boolean) extends Expression {
   override def toString: String = value.toString
+
+  def evaluate() = BooleanValue(value)
 }
 
 object IntegerLiteral {
@@ -179,6 +160,9 @@ object IntegerLiteral {
 
 case class IntegerLiteral(value: Int) extends Expression {
   override def toString: String = value.toString
+
+  def evaluate() = IntegerValue(value)
+
 }
 
 object Identifier {
@@ -197,55 +181,31 @@ case class Identifier(value: String) extends Expression {
 }
 
 
-object PrefixExpression {
-  def apply(lexer: TokenIterator): PrefixExpression = {
-    val token = lexer.currentToken
-    if (!lexer.nextTokens())
-      throw new RuntimeException
-    val expression = Expression(lexer)
-    PrefixExpression(token, expression)
-  }
-}
-
-case class PrefixExpression(operator: Token, right: Expression) extends Expression
-
-object InfixExpression {
-  def apply(lexer: TokenIterator, left: Expression): Expression = {
-    val precedence = lexer.curPrecedence()
-    val operator = lexer.currentToken
-    lexer.nextTokens()
-    val right = Expression(lexer)
-    InfixExpression(operator, left, right)
-  }
-}
-
-case class InfixExpression(operator: Token, left: Expression, right: Expression) extends Expression
-
 object FunctionLiteral {
+  def build(lexer: TokenIterator, head: Identifier): List[Identifier] = lexer.currentToken match {
+    case CommaToken =>
+      lexer.nextTokens()
+      head :: build(lexer, Identifier(lexer))
+    case _ => List(head)
+  }
+
+
   def apply(lexer: TokenIterator): Expression = {
-    lexer.expectPeek(LeftParenthesisToken)
-    val parameters = parseFunctionParameters(lexer)
-    lexer.expectPeek(LeftBraceToken)
+    lexer.expectCurrent(FunctionToken)
+    lexer.expectCurrent(LeftParenthesisToken)
+    val parameters = lexer.currentToken match {
+      case RightParenthesisToken => List()
+      case _ => build(lexer, Identifier(lexer))
+    }
+    lexer.expectCurrent(RightParenthesisToken)
     val body = BlockStatement(lexer)
     FunctionLiteral(parameters, body)
   }
-
-  private def parseFunctionParameters(lexer: TokenIterator): List[Identifier] = {
-    val result: ListBuffer[Identifier] = ListBuffer()
-    if (lexer.peekToken == RightParenthesisToken) {
-      lexer.nextTokens()
-      return result.toList
-    }
-    do {
-      lexer.nextTokens()
-      result.addOne(Identifier(lexer))
-    } while (lexer.currentToken == CommaToken)
-    if (lexer.currentToken != RightParenthesisToken) throw new RuntimeException
-    result.toList
-  }
 }
 
-case class FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression
+case class FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression {
+  override def toString: String = "fn(" + parameters.mkString(", ") + ")" + body.toString
+}
 
 
 object ParameterList {
@@ -260,22 +220,9 @@ object ParameterList {
     ParameterList(build(lexer, Identifier(lexer)))
 }
 
-case class ParameterList(identifiers: List[Identifier])
-
-
-object ArgumentList {
-  def build(lexer: TokenIterator, head: Expression): List[Expression] = lexer.currentToken match {
-    case CommaToken =>
-      lexer.nextTokens()
-      head :: build(lexer, Expression(lexer))
-    case _ => List(head)
-  }
-
-  def apply(lexer: TokenIterator): ArgumentList =
-    ArgumentList(build(lexer, Identifier(lexer)))
+case class ParameterList(identifiers: List[Identifier]) {
+  override def toString: String = identifiers.mkString(", ")
 }
-
-case class ArgumentList(identifiers: List[Expression])
 
 
 object Primary {
@@ -287,9 +234,10 @@ object Primary {
       case LeftParenthesisToken =>
         lexer.nextTokens()
         val result = Expression(lexer)
-        if (lexer.currentToken != RightParenthesisToken)
-          throw new RuntimeException(lexer.currentToken + " expected ')'")
+        lexer.expectCurrent(RightParenthesisToken)
         result
+      case FunctionToken => FunctionLiteral(lexer)
+      case IfToken => IfExpression(lexer)
       case _ => CallExpression(lexer)
     }
     Primary(expression)
@@ -301,24 +249,32 @@ case class Primary(expression: Expression) {
 }
 
 
-object Function {
-  def apply(lexer: TokenIterator) =
-    Identifier(lexer)
-}
-
 object CallExpression {
+
+  def build(lexer: TokenIterator, head: Expression): List[Expression] = lexer.currentToken match {
+    case CommaToken =>
+      lexer.nextTokens()
+      head :: build(lexer, Expression(lexer))
+    case _ => List(head)
+  }
+
+
   def apply(lexer: TokenIterator): CallExpression = {
-    val function = Function(lexer)
-    if (lexer.currentToken != LeftParenthesisToken) throw new RuntimeException("'(' expected...")
-    lexer.nextTokens()
-    val arguments = ArgumentList(lexer)
-    if (lexer.currentToken != RightParenthesisToken) throw new RuntimeException("')' expected...")
+    val function = Identifier(lexer)
+    lexer.expectCurrent(LeftParenthesisToken)
+    val arguments = lexer.currentToken match {
+      case RightParenthesisToken => List()
+      case _ => build(lexer, Expression(lexer))
+    }
+    lexer.expectCurrent(RightParenthesisToken)
     lexer.nextTokens()
     CallExpression(function, arguments)
   }
 }
 
-case class CallExpression(function: Expression, arguments: ArgumentList) extends Expression
+case class CallExpression(function: Expression, arguments: List[Expression]) extends Expression {
+  override def toString: String = function.toString + "(" + arguments.mkString(", ") + ")"
+}
 
 
 object PointTerm {
@@ -346,7 +302,7 @@ object PointTerm {
 }
 
 case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expression {
-  override def toString = left.toString + right.map(pair => pair._1.toString + pair._2.toString).mkString("")
+  override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")
 }
 
 
@@ -375,7 +331,7 @@ object DashTerm {
 }
 
 case class DashTerm(left: PointTerm, right: List[(Token, PointTerm)]) extends Expression {
-  override def toString = left.toString + right.map(pair => pair._1.toString + pair._2.toString).mkString("")
+  override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")
 }
 
 object Unary {
@@ -420,7 +376,7 @@ object Comparison {
 }
 
 case class Comparison(left: DashTerm, right: Option[(Token, DashTerm)]) extends Expression {
-  override def toString(): String = left.toString + (right match {
+  override def toString: String = left.toString + (right match {
     case None => ""
     case Some(pair) => pair._1.toString + pair._2.toString
   })
@@ -442,7 +398,7 @@ object Equality {
 }
 
 case class Equality(left: Comparison, right: Option[(Token, Comparison)]) extends Expression {
-  override def toString(): String = left.toString + (right match {
+  override def toString: String = left.toString + (right match {
     case None => ""
     case Some(pair) => pair._1.toString + pair._2.toString
   })

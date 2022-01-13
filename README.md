@@ -22,12 +22,15 @@ Here will be formal language specification in [EBNF](https://en.wikipedia.org/wi
                           | <identifier>
                           | <int>
                           | <bool>
+                          | <if-expression>
+                          | <function-literal>
 
 
 <function-call>         ::= <function> "(" <argument-list> ")"
 <function>              ::= <function-literal>
                           | <identifier>
 <function-literal>      ::= "fn (" <parameter-list> ")" <block-statement>
+<if-expression>         ::= "if" "(" <expression> ")" <block-statement> ["else" <block-statement>]
 <block-statement>       ::= "{" <statement-list> "}"
 <argument-list>         ::= { <expression> "," }
 <parameter-list>        ::= { <identifier> "," }
