@@ -108,9 +108,8 @@ class LexerTest extends AnyFunSuite {
     val lexer = Lexer(code)
     for ((i, expectedToken) <- Iterator.from(0).zip(expectedTokens)) {
       val actualToken = lexer.currentToken
-      println(actualToken)
       assert(expectedToken == actualToken)
-      lexer.nextTokens()
+      lexer.nextToken()
     }
   }
 }

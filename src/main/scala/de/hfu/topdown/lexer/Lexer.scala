@@ -24,10 +24,10 @@ class Lexer(val tokenizer: StreamTokenizer) {
   def expectCurrent(expectedToken: Token): Unit = {
     if (monkeyToken != expectedToken)
       throw new RuntimeException("found " + monkeyToken + " expected " + expectedToken)
-    nextTokens()
+    nextToken()
   }
 
-  def nextTokens(): Boolean = {
+  def nextToken(): Boolean = {
     monkeyToken = next()
     monkeyToken != EOFToken
   }

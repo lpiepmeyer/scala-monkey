@@ -1,12 +1,13 @@
 package de.hfu.topdown
 
 import de.hfu.evaluator.{BooleanValue, IntegerValue}
-import de.hfu.lexer.{Precedence => _, _}
+//import de.hfu.lexer.{FunctionToken, LeftParenthesisToken, RightParenthesisToken, TokenIterator}
+import de.hfu.topdown.lexer._
 
 abstract class Node {}
 
 object Statement {
-  def apply(lexer: TokenIterator): Statement = lexer.currentToken match {
+  def apply(lexer: Lexer): Statement = lexer.currentToken match {
     case LetToken => LetStatement(lexer)
     case ReturnToken => ReturnStatement(lexer)
     case _ => ExpressionStatement(lexer)
@@ -16,13 +17,26 @@ object Statement {
 abstract class Statement() extends Node
 
 object Expression {
-  def apply(lexer: TokenIterator): Expression = Equality(lexer)
+  def apply(lexer: Lexer): Expression = Equality(lexer)
 }
 
 abstract class Expression() extends Node
 
+object ParanthizedExpression {
+  def apply(lexer: Lexer): ParanthizedExpression = {
+    lexer.nextToken()
+    val result = ParanthizedExpression(Expression(lexer))
+    lexer.expectCurrent(RightParenthesisToken)
+    result
+  }
+}
+
+case class ParanthizedExpression(expression: Expression) extends Expression {
+  override def toString: String = "(" + expression + ")"
+}
+
 object Program {
-  def apply(lexer: TokenIterator): Program = lexer.currentToken match {
+  def apply(lexer: Lexer): Program = lexer.currentToken match {
     case EOFToken => Program(List())
     case _ => Program(StatementList(lexer, EOFToken))
   }
@@ -33,7 +47,7 @@ case class Program(statements: List[Statement]) extends Node {
 }
 
 object StatementList {
-  def build(lexer: TokenIterator, head: Statement, sentinel: Token): List[Statement] = lexer.currentToken match {
+  def build(lexer: Lexer, head: Statement, sentinel: Token): List[Statement] = lexer.currentToken match {
     case token: Token if token == sentinel =>
       val result = List(head)
       result
@@ -41,12 +55,12 @@ object StatementList {
       head :: build(lexer, Statement(lexer), sentinel)
   }
 
-  def apply(lexer: TokenIterator, sentinel: Token): List[Statement] =
+  def apply(lexer: Lexer, sentinel: Token): List[Statement] =
     build(lexer, Statement(lexer), sentinel)
 }
 
 object BlockStatement {
-  def apply(lexer: TokenIterator): BlockStatement = {
+  def apply(lexer: Lexer): BlockStatement = {
     lexer.expectCurrent(LeftBraceToken)
     val statements = lexer.currentToken match {
       case RightBraceToken => List()
@@ -67,7 +81,7 @@ case class BlockStatement(statements: List[Statement]) extends Node {
 
 object IfExpression {
 
-  def apply(lexer: TokenIterator): Expression = {
+  def apply(lexer: Lexer): Expression = {
     lexer.expectCurrent(IfToken)
     lexer.expectCurrent(LeftParenthesisToken)
     val condition = Expression(lexer)
@@ -75,7 +89,7 @@ object IfExpression {
     if (lexer.currentToken != LeftBraceToken) throw new RuntimeException("found " + lexer.currentToken + " expected " + LeftBraceToken)
     val consequence = BlockStatement(lexer)
     if (lexer.currentToken == ElseToken) {
-      lexer.nextTokens()
+      lexer.nextToken()
       if (lexer.currentToken != LeftBraceToken) throw new RuntimeException("found " + lexer.currentToken + " expected " + LeftBraceToken)
       val alternative = BlockStatement(lexer)
       return IfExpression(condition, consequence, Some(alternative))
@@ -93,8 +107,8 @@ case class IfExpression(condition: Expression, consequence: BlockStatement, alte
 }
 
 object LetStatement {
-  def apply(lexer: TokenIterator): LetStatement = {
-    lexer.nextTokens()
+  def apply(lexer: Lexer): LetStatement = {
+    lexer.nextToken()
     val identifier = Identifier(lexer)
     lexer.expectCurrent(AssignmentToken)
     val expression = Expression(lexer)
@@ -105,12 +119,12 @@ object LetStatement {
 }
 
 case class LetStatement(name: String, expression: Expression) extends Statement {
-  override def toString: String = "let " + name + " = " + expression.toString
+  override def toString: String = "let " + name + " = " + expression.toString + ";"
 }
 
 object ReturnStatement {
-  def apply(lexer: TokenIterator): ReturnStatement = {
-    if (!lexer.nextTokens()) throw new RuntimeException
+  def apply(lexer: Lexer): ReturnStatement = {
+    if (!lexer.nextToken()) throw new RuntimeException
     val expression = Expression(lexer)
     lexer.expectCurrent(SemicolonToken)
     ReturnStatement(expression)
@@ -118,13 +132,13 @@ object ReturnStatement {
 }
 
 case class ReturnStatement(expression: Expression) extends Statement {
-  override def toString: String = "return " + expression
+  override def toString: String = "return " + expression + ";"
 }
 
 object ExpressionStatement {
-  def apply(lexer: TokenIterator): ExpressionStatement = {
+  def apply(lexer: Lexer): ExpressionStatement = {
     val result = ExpressionStatement(Expression(lexer))
-    if (lexer.currentToken == SemicolonToken) lexer.nextTokens()
+    if (lexer.currentToken == SemicolonToken) lexer.nextToken()
     result
   }
 }
@@ -134,12 +148,12 @@ case class ExpressionStatement(expression: Expression) extends Statement {
 }
 
 object BoolLiteral {
-  def apply(lexer: TokenIterator): BoolLiteral = {
+  def apply(lexer: Lexer): BoolLiteral = {
     val result = lexer.currentToken match {
       case TrueToken => BoolLiteral(true)
       case FalseToken => BoolLiteral(false)
     }
-    lexer.nextTokens()
+    lexer.nextToken()
     result
   }
 }
@@ -151,9 +165,9 @@ case class BoolLiteral(value: Boolean) extends Expression {
 }
 
 object IntegerLiteral {
-  def apply(lexer: TokenIterator): IntegerLiteral = {
+  def apply(lexer: Lexer): IntegerLiteral = {
     val result = IntegerLiteral(lexer.currentToken.text.toInt)
-    lexer.nextTokens()
+    lexer.nextToken()
     result
   }
 }
@@ -166,12 +180,12 @@ case class IntegerLiteral(value: Int) extends Expression {
 }
 
 object Identifier {
-  def apply(lexer: TokenIterator): Identifier = {
+  def apply(lexer: Lexer): Identifier = {
     val result = lexer.currentToken match {
       case IdentifierToken(name) => Identifier(name)
       case _ => throw new RuntimeException
     }
-    lexer.nextTokens()
+    lexer.nextToken()
     result
   }
 }
@@ -182,15 +196,15 @@ case class Identifier(value: String) extends Expression {
 
 
 object FunctionLiteral {
-  def build(lexer: TokenIterator, head: Identifier): List[Identifier] = lexer.currentToken match {
+  def build(lexer: Lexer, head: Identifier): List[Identifier] = lexer.currentToken match {
     case CommaToken =>
-      lexer.nextTokens()
+      lexer.nextToken()
       head :: build(lexer, Identifier(lexer))
     case _ => List(head)
   }
 
 
-  def apply(lexer: TokenIterator): Expression = {
+  def apply(lexer: Lexer): Expression = {
     lexer.expectCurrent(FunctionToken)
     lexer.expectCurrent(LeftParenthesisToken)
     val parameters = lexer.currentToken match {
@@ -203,39 +217,19 @@ object FunctionLiteral {
   }
 }
 
+
 case class FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression {
   override def toString: String = "fn(" + parameters.mkString(", ") + ")" + body.toString
 }
 
 
-object ParameterList {
-  def build(lexer: TokenIterator, head: Identifier): List[Identifier] = lexer.currentToken match {
-    case CommaToken =>
-      lexer.nextTokens()
-      head :: build(lexer, Identifier(lexer))
-    case _ => List(head)
-  }
-
-  def apply(lexer: TokenIterator): ParameterList =
-    ParameterList(build(lexer, Identifier(lexer)))
-}
-
-case class ParameterList(identifiers: List[Identifier]) {
-  override def toString: String = identifiers.mkString(", ")
-}
-
-
 object Primary {
-  def apply(lexer: TokenIterator): Primary = {
+  def apply(lexer: Lexer): Primary = {
     val expression = lexer.currentToken match {
       case IdentifierToken(_) => Identifier(lexer)
       case IntegerToken(_) => IntegerLiteral(lexer)
       case TrueToken | FalseToken => BoolLiteral(lexer)
-      case LeftParenthesisToken =>
-        lexer.nextTokens()
-        val result = Expression(lexer)
-        lexer.expectCurrent(RightParenthesisToken)
-        result
+      case LeftParenthesisToken => ParanthizedExpression(lexer)
       case FunctionToken => FunctionLiteral(lexer)
       case IfToken => IfExpression(lexer)
       case _ => CallExpression(lexer)
@@ -251,15 +245,15 @@ case class Primary(expression: Expression) {
 
 object CallExpression {
 
-  def build(lexer: TokenIterator, head: Expression): List[Expression] = lexer.currentToken match {
+  def build(lexer: Lexer, head: Expression): List[Expression] = lexer.currentToken match {
     case CommaToken =>
-      lexer.nextTokens()
+      lexer.nextToken()
       head :: build(lexer, Expression(lexer))
     case _ => List(head)
   }
 
 
-  def apply(lexer: TokenIterator): CallExpression = {
+  def apply(lexer: Lexer): CallExpression = {
     val function = Identifier(lexer)
     lexer.expectCurrent(LeftParenthesisToken)
     val arguments = lexer.currentToken match {
@@ -267,7 +261,7 @@ object CallExpression {
       case _ => build(lexer, Expression(lexer))
     }
     lexer.expectCurrent(RightParenthesisToken)
-    lexer.nextTokens()
+    lexer.nextToken()
     CallExpression(function, arguments)
   }
 }
@@ -278,19 +272,19 @@ case class CallExpression(function: Expression, arguments: List[Expression]) ext
 
 
 object PointTerm {
-  def createPair(lexer: TokenIterator): (Token, Unary) = {
+  def createPair(lexer: Lexer): (Token, Unary) = {
     val operator = lexer.currentToken
-    lexer.nextTokens()
+    lexer.nextToken()
     (operator, Unary(lexer))
   }
 
-  def build(lexer: TokenIterator, head: (Token, Unary)): List[(Token, Unary)] = lexer.currentToken match {
+  def build(lexer: Lexer, head: (Token, Unary)): List[(Token, Unary)] = lexer.currentToken match {
     case AsteriskToken | SlashToken =>
       head :: build(lexer, createPair(lexer))
     case _ => List(head)
   }
 
-  def apply(lexer: TokenIterator): PointTerm = {
+  def apply(lexer: Lexer): PointTerm = {
     val left = Unary(lexer)
     lexer.currentToken match {
       case AsteriskToken | SlashToken =>
@@ -307,19 +301,19 @@ case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expressio
 
 
 object DashTerm {
-  def createPair(lexer: TokenIterator): (Token, PointTerm) = {
+  def createPair(lexer: Lexer): (Token, PointTerm) = {
     val operator = lexer.currentToken
-    lexer.nextTokens()
+    lexer.nextToken()
     (operator, PointTerm(lexer))
   }
 
-  def build(lexer: TokenIterator, head: (Token, PointTerm)): List[(Token, PointTerm)] = lexer.currentToken match {
+  def build(lexer: Lexer, head: (Token, PointTerm)): List[(Token, PointTerm)] = lexer.currentToken match {
     case PlusToken | MinusToken =>
       head :: build(lexer, createPair(lexer))
     case _ => List(head)
   }
 
-  def apply(lexer: TokenIterator): DashTerm = {
+  def apply(lexer: Lexer): DashTerm = {
     val left = PointTerm(lexer)
     lexer.currentToken match {
       case PlusToken | MinusToken =>
@@ -335,19 +329,19 @@ case class DashTerm(left: PointTerm, right: List[(Token, PointTerm)]) extends Ex
 }
 
 object Unary {
-  def build(lexer: TokenIterator, head: Token): List[Token] = lexer.currentToken match {
+  def build(lexer: Lexer, head: Token): List[Token] = lexer.currentToken match {
     case BangToken | MinusToken =>
       val operator = lexer.currentToken
-      lexer.nextTokens()
+      lexer.nextToken()
       head :: build(lexer, operator)
     case _ => List(head)
   }
 
-  def apply(lexer: TokenIterator): Unary = {
+  def apply(lexer: Lexer): Unary = {
     val prefixes = lexer.currentToken match {
       case BangToken | MinusToken =>
         val operator = lexer.currentToken
-        lexer.nextTokens()
+        lexer.nextToken()
         build(lexer, operator)
       case _ => List()
     }
@@ -361,12 +355,12 @@ case class Unary(prefixes: List[Token], primary: Primary) extends Expression {
 }
 
 object Comparison {
-  def apply(lexer: TokenIterator): Comparison = {
+  def apply(lexer: Lexer): Comparison = {
     val left = DashTerm(lexer)
     val right = lexer.currentToken match {
       case LessThanToken | GreaterThanToken =>
         val operator = lexer.currentToken
-        lexer.nextTokens()
+        lexer.nextToken()
         val term = DashTerm(lexer)
         Some((operator, term))
       case _ => None
@@ -378,17 +372,17 @@ object Comparison {
 case class Comparison(left: DashTerm, right: Option[(Token, DashTerm)]) extends Expression {
   override def toString: String = left.toString + (right match {
     case None => ""
-    case Some(pair) => pair._1.toString + pair._2.toString
+    case Some(pair) => " " + pair._1.toString + " " + pair._2.toString
   })
 }
 
 object Equality {
-  def apply(lexer: TokenIterator): Equality = {
+  def apply(lexer: Lexer): Equality = {
     val left = Comparison(lexer)
     val right = lexer.currentToken match {
       case EqualsToken | NotEqualsToken =>
         val operator = lexer.currentToken
-        lexer.nextTokens()
+        lexer.nextToken()
         val term = Comparison(lexer)
         Some((operator, term))
       case _ => None
@@ -400,6 +394,6 @@ object Equality {
 case class Equality(left: Comparison, right: Option[(Token, Comparison)]) extends Expression {
   override def toString: String = left.toString + (right match {
     case None => ""
-    case Some(pair) => pair._1.toString + pair._2.toString
+    case Some(pair) => " " + pair._1.toString + " " + pair._2.toString
   })
 }
