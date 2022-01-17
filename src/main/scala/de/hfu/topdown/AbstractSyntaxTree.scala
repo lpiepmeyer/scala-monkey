@@ -1,10 +1,10 @@
 package de.hfu.topdown
 
-import de.hfu.evaluator.{BooleanValue, IntegerValue}
-//import de.hfu.lexer.{FunctionToken, LeftParenthesisToken, RightParenthesisToken, TokenIterator}
 import de.hfu.topdown.lexer._
 
-abstract class Node {}
+abstract class Node {
+  def evaluate(context: Context): Value
+}
 
 object Statement {
   def apply(lexer: Lexer): Statement = lexer.currentToken match {
@@ -33,6 +33,8 @@ object ParanthizedExpression {
 
 case class ParanthizedExpression(expression: Expression) extends Expression {
   override def toString: String = "(" + expression + ")"
+
+  override def evaluate(context: Context): Value = expression.evaluate(context)
 }
 
 object Program {
@@ -44,6 +46,14 @@ object Program {
 
 case class Program(statements: List[Statement]) extends Node {
   override def toString: String = statements.mkString(";\n") + (if (statements.nonEmpty) ";")
+
+  override def evaluate(context: Context): Value =
+    statements
+      .map(_.evaluate(context))
+      .map(_ match {
+        case ReturnValue(v) => return v
+        case v => v
+      }).last
 }
 
 object StatementList {
@@ -77,6 +87,14 @@ case class BlockStatement(statements: List[Statement]) extends Node {
     case List() => "{}"
     case _ => "{\n\t" + statements.mkString(";\n") + (if (statements.nonEmpty) ";") + "\n}"
   }
+
+  override def evaluate(context: Context): Value =
+    statements
+      .map(_.evaluate(context))
+      .map(_ match {
+        case v: ReturnValue => return v
+        case v => v
+      }).last
 }
 
 object IfExpression {
@@ -104,6 +122,13 @@ case class IfExpression(condition: Expression, consequence: BlockStatement, alte
     case None => ""
     case Some(block) => "else " + block.toString
   })
+
+  override def evaluate(context: Context): Value = condition.evaluate(context) match {
+    case BooleanValue(false) | NoValue if alternative.isDefined => alternative.get.evaluate(context)
+    case BooleanValue(false) | NoValue => NoValue
+    case _ => consequence.evaluate(context)
+  }
+
 }
 
 object LetStatement {
@@ -120,6 +145,8 @@ object LetStatement {
 
 case class LetStatement(name: String, expression: Expression) extends Statement {
   override def toString: String = "let " + name + " = " + expression.toString + ";"
+
+  override def evaluate(context: Context): Value = context(name) = expression.evaluate(context)
 }
 
 object ReturnStatement {
@@ -133,6 +160,8 @@ object ReturnStatement {
 
 case class ReturnStatement(expression: Expression) extends Statement {
   override def toString: String = "return " + expression + ";"
+
+  override def evaluate(context: Context): Value = ReturnValue(expression.evaluate(context))
 }
 
 object ExpressionStatement {
@@ -145,6 +174,8 @@ object ExpressionStatement {
 
 case class ExpressionStatement(expression: Expression) extends Statement {
   override def toString: String = expression.toString
+
+  override def evaluate(context: Context): Value = expression.evaluate(context)
 }
 
 object BoolLiteral {
@@ -162,6 +193,8 @@ case class BoolLiteral(value: Boolean) extends Expression {
   override def toString: String = value.toString
 
   def evaluate() = BooleanValue(value)
+
+  override def evaluate(context: Context): Value = BooleanValue(value)
 }
 
 object IntegerLiteral {
@@ -175,7 +208,7 @@ object IntegerLiteral {
 case class IntegerLiteral(value: Int) extends Expression {
   override def toString: String = value.toString
 
-  def evaluate() = IntegerValue(value)
+  def evaluate(context: Context) = IntegerValue(value)
 
 }
 
@@ -192,6 +225,11 @@ object Identifier {
 
 case class Identifier(value: String) extends Expression {
   override def toString: String = value
+
+  override def evaluate(context: Context): Value = context(value) match {
+    case None => throw new RuntimeException
+    case Some(v) => v
+  }
 }
 
 
@@ -220,6 +258,8 @@ object FunctionLiteral {
 
 case class FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression {
   override def toString: String = "fn(" + parameters.mkString(", ") + ")" + body.toString
+
+  override def evaluate(context: Context): Value = FunctionValue(parameters, body)
 }
 
 
@@ -238,8 +278,10 @@ object Primary {
   }
 }
 
-case class Primary(expression: Expression) {
+case class Primary(expression: Expression) extends Expression {
   override def toString: String = expression.toString
+
+  override def evaluate(context: Context): Value = expression.evaluate(context)
 }
 
 
@@ -268,6 +310,21 @@ object CallExpression {
 
 case class CallExpression(function: Expression, arguments: List[Expression]) extends Expression {
   override def toString: String = function.toString + "(" + arguments.mkString(", ") + ")"
+
+  override def evaluate(context: Context): Value = {
+    val evaluatedArguments = arguments.map(_.evaluate(context))
+    val result = function.evaluate(context) match {
+      case FunctionValue(parameters, body) =>
+        val variables = parameters.map(_.value).zip(evaluatedArguments)
+        val innerContext = context.extend(collection.mutable.Map(variables: _*))
+        body.evaluate(innerContext)
+      case _ => throw new RuntimeException
+    }
+    result match {
+      case ReturnValue(value) => value
+      case value => value
+    }
+  }
 }
 
 
@@ -297,6 +354,19 @@ object PointTerm {
 
 case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expression {
   override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")
+
+  override def evaluate(context: Context): Value = right.foldLeft(left.evaluate(context))((result: Value, pair) => (pair._1, pair._2.evaluate(context)) match {
+    case (AsteriskToken, t: IntegerValue) => multiply(result, t)
+    case (SlashToken, t: IntegerValue) => divide(result, t)
+  })
+
+  private def multiply(left: Value, right: Value): Value = (left, right) match {
+    case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v * w)
+  }
+
+  private def divide(left: Value, right: Value): Value = (left, right) match {
+    case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v / w)
+  }
 }
 
 
@@ -326,6 +396,20 @@ object DashTerm {
 
 case class DashTerm(left: PointTerm, right: List[(Token, PointTerm)]) extends Expression {
   override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")
+
+  override def evaluate(context: Context): Value =
+    right.foldLeft(left.evaluate(context))((result: Value, pair) => (pair._1, pair._2.evaluate(context)) match {
+      case (MinusToken, t: IntegerValue) => subtract(result, t)
+      case (PlusToken, t: IntegerValue) => add(result, t)
+    })
+
+  private def add(left: Value, right: Value): Value = (left, right) match {
+    case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v + w)
+  }
+
+  private def subtract(left: Value, right: Value): Value = (left, right) match {
+    case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v - w)
+  }
 }
 
 object Unary {
@@ -352,6 +436,22 @@ object Unary {
 
 case class Unary(prefixes: List[Token], primary: Primary) extends Expression {
   override def toString: String = prefixes.mkString("") + primary.toString
+
+  override def evaluate(context: Context): Value = prefixes.foldLeft(primary.evaluate(context))((term, token) => token match {
+    case MinusToken => minus(term)
+    case BangToken => not(term)
+  })
+
+  def minus(option: Value): Value = option match {
+    case IntegerValue(v: Int) => IntegerValue(-v)
+    case _ => NoValue
+  }
+
+  def not(option: Value): Value = option match {
+    case BooleanValue(v: Boolean) => BooleanValue(!v)
+    case NoValue => BooleanValue(true)
+    case _ => BooleanValue(false)
+  }
 }
 
 object Comparison {
@@ -374,6 +474,22 @@ case class Comparison(left: DashTerm, right: Option[(Token, DashTerm)]) extends 
     case None => ""
     case Some(pair) => " " + pair._1.toString + " " + pair._2.toString
   })
+
+  override def evaluate(context: Context): Value = right match {
+    case None => left.evaluate(context)
+    case Some((token, right)) => token match {
+      case LessThanToken => lessThan(left.evaluate(context), right.evaluate(context))
+      case GreaterThanToken => greaterThan(left.evaluate(context), right.evaluate(context))
+    }
+  }
+
+  private def lessThan(left: Value, right: Value): Value = (left, right) match {
+    case (IntegerValue(v: Int), IntegerValue(w: Int)) => BooleanValue(v < w)
+  }
+
+  private def greaterThan(left: Value, right: Value): Value = (left, right) match {
+    case (IntegerValue(v: Int), IntegerValue(w: Int)) => BooleanValue(v > w)
+  }
 }
 
 object Equality {
@@ -396,4 +512,12 @@ case class Equality(left: Comparison, right: Option[(Token, Comparison)]) extend
     case None => ""
     case Some(pair) => " " + pair._1.toString + " " + pair._2.toString
   })
+
+  override def evaluate(context: Context): Value = right match {
+    case None => left.evaluate(context)
+    case Some((token, term)) => token match {
+      case EqualsToken => BooleanValue(left.evaluate(context) == term.evaluate(context))
+      case NotEqualsToken => BooleanValue(left.evaluate(context) != term.evaluate(context))
+    }
+  }
 }
