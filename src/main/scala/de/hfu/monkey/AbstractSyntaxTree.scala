@@ -1,6 +1,6 @@
-package de.hfu.topdown
+package de.hfu.monkey
 
-import de.hfu.topdown.lexer._
+import de.hfu.monkey.lexer._
 
 abstract class Node {
   def evaluate(stack: Stack): Value
@@ -227,7 +227,7 @@ case class Identifier(value: String) extends Expression {
   override def toString: String = value
 
   override def evaluate(stack: Stack): Value = stack(value) match {
-    case None => throw new RuntimeException
+    case None => throw new RuntimeException("identifier '" + this.value + "' not found")
     case Some(v) => v
   }
 }

@@ -1,7 +1,7 @@
-package de.hfu.topdown
+package de.hfu.monkey
 
 
-import de.hfu.topdown.lexer.Lexer
+import de.hfu.monkey.lexer.Lexer
 
 import java.io.FileReader
 import scala.io.StdIn.readLine
@@ -16,10 +16,25 @@ object Main {
     }
   }
 
+  def toString(value: Value): String = value match {
+    case IntegerValue(v) => v.toString
+    case BooleanValue(v) => v.toString
+    case NoValue => "None"
+    case ReturnValue(value) => toString(value)
+    case FunctionValue(parameters, body) => "<<function definition>>"
+  }
+
+  def evaluate(lexer: Lexer, stack: Stack = Stack()): String =
+    try {
+      toString(Program(lexer).evaluate(stack))
+    } catch {
+      case e: RuntimeException => e.getMessage
+    }
+
+
   private def execute(filename: String): Unit = {
     val reader = new FileReader(filename)
-    val program = de.hfu.topdown.Program(Lexer(reader))
-    val actual = program.evaluate(Stack())
+    val actual = evaluate(Lexer(reader))
     println(actual)
   }
 
@@ -32,7 +47,7 @@ object Main {
         println("terminating REPL")
         return
       }
-      val actual = Program(Lexer(input)).evaluate(context)
+      val actual = evaluate(Lexer(input), context)
       println(actual)
     }
   }

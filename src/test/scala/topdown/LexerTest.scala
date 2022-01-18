@@ -1,6 +1,6 @@
 package topdown
 
-import de.hfu.topdown.lexer._
+import de.hfu.monkey.lexer._
 import org.scalatest.funsuite.AnyFunSuite
 
 class LexerTest extends AnyFunSuite {

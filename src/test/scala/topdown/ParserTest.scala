@@ -1,7 +1,7 @@
 package topdown
 
-import de.hfu.topdown._
-import de.hfu.topdown.lexer._
+import de.hfu.monkey._
+import de.hfu.monkey.lexer._
 import org.scalatest.funsuite.AnyFunSuite
 
 // TODO: add more tests

@@ -1,4 +1,4 @@
-package de.hfu.topdown
+package de.hfu.monkey
 
 import scala.collection.mutable
 

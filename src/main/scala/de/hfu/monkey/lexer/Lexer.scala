@@ -1,4 +1,4 @@
-package de.hfu.topdown.lexer
+package de.hfu.monkey.lexer
 
 import java.io.{Reader, StreamTokenizer, StringReader}
 
