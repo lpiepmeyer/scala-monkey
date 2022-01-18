@@ -16,7 +16,6 @@ class Lexer(val tokenizer: StreamTokenizer) {
   tokenizer.slashSlashComments(false)
   tokenizer.ordinaryChar('/')
   tokenizer.ordinaryChar('-')
-  private var peekToken = tokenizer.nextToken()
   private var monkeyToken = next()
 
   def currentToken: Token = monkeyToken
@@ -32,23 +31,20 @@ class Lexer(val tokenizer: StreamTokenizer) {
     monkeyToken != EOFToken
   }
 
-  private def next(): Token = peekToken match {
+  private def next(): Token = tokenizer.nextToken() match {
     case '=' => lookahead(EqualsToken, AssignmentToken)
     case '!' => lookahead(NotEqualsToken, BangToken)
     case c =>
       val result = toMonkeyToken(c)
-      peekToken = tokenizer.nextToken()
       result
   }
 
-  private def lookahead(found: Token, notFound: Token): Token = {
-    peekToken = tokenizer.nextToken()
-    peekToken match {
-      case '=' =>
-        peekToken = tokenizer.nextToken()
-        found
-      case _ => notFound
-    }
+  private def lookahead(found: Token, notFound: Token): Token = tokenizer.nextToken() match {
+    case '=' =>
+      found
+    case _ =>
+      tokenizer.pushBack()
+      notFound
   }
 
   private def toMonkeyToken(simpleToken: Int): Token = tokenizer.ttype match {
