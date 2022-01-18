@@ -317,7 +317,7 @@ case class CallExpression(primary: Primary, arguments: Option[List[Expression]])
     val result = primary.evaluate(stack) match {
       case FunctionValue(parameters, body) =>
         val variables = parameters.map(_.value).zip(evaluatedArguments)
-        val innerstack = stack.extend(collection.mutable.Map(variables: _*))
+        val innerstack = stack.extend(variables)
         body.evaluate(innerstack)
       case _ => throw new RuntimeException
     }

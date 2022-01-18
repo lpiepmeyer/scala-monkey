@@ -9,12 +9,12 @@ object Stack {
 
 class Stack(private val frames: List[mutable.Map[String, Value]] = List(mutable.HashMap[String, Value]())) {
 
-  def extend(frame: mutable.Map[String, Value]) =
-    new Stack(frame :: frames)
+  def extend(frameData: List[(String, Value)]) =
+    new Stack(collection.mutable.Map(frameData: _*) :: frames)
 
   def apply(name: String): Option[Value] =
-    frames.collectFirst({
-      case map: Map[String, Value] if map.contains(name) => map(name)
+    frames.map(_.get(name)).collectFirst({
+      case Some(value) => return Some(value)
     })
 
 
