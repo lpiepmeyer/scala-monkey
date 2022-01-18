@@ -15,10 +15,10 @@ Here will be formal language specification in [EBNF](https://en.wikipedia.org/wi
 <equality>              ::= <comparison> [("=="|"!=") <comparison>]
 <comparison>            ::= <dashterm> [("<"|">") <dashterm>]
 <dashterm>              ::= <pointterm> (("-"|"!") <pointterm>)*
-<pointterm>             ::= <factor> (( "*" | "/" ) <factor>)*
-<factor>                ::= ("-"|"!")* <primary>
-<primary>               ::= "(" <expression> ")"
-                          | <function-call>
+<pointterm>             ::= <unary> (( "*" | "/" ) <unary>)*
+<unary>                ::= ("-"|"!")* call
+<call>                  ::= primary [ "(" <argument-list> ")"] 
+<primary>               ::= <paranthized-expression>
                           | <identifier>
                           | <int>
                           | <bool>
@@ -26,7 +26,8 @@ Here will be formal language specification in [EBNF](https://en.wikipedia.org/wi
                           | <function-literal>
 
 
-<function-call>         ::= <function> "(" <argument-list> ")"
+
+<paranthized-expression>::= "(" expression ")"
 <function>              ::= <function-literal>
                           | <identifier>
 <function-literal>      ::= "fn (" <parameter-list> ")" <block-statement>

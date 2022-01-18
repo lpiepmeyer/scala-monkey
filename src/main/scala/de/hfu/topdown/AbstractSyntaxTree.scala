@@ -3,7 +3,7 @@ package de.hfu.topdown
 import de.hfu.topdown.lexer._
 
 abstract class Node {
-  def evaluate(context: Context): Value
+  def evaluate(stack: Stack): Value
 }
 
 object Statement {
@@ -24,7 +24,7 @@ abstract class Expression() extends Node
 
 object ParanthizedExpression {
   def apply(lexer: Lexer): ParanthizedExpression = {
-    lexer.nextToken()
+    lexer.expectCurrent(LeftParenthesisToken)
     val result = ParanthizedExpression(Expression(lexer))
     lexer.expectCurrent(RightParenthesisToken)
     result
@@ -34,7 +34,7 @@ object ParanthizedExpression {
 case class ParanthizedExpression(expression: Expression) extends Expression {
   override def toString: String = "(" + expression + ")"
 
-  override def evaluate(context: Context): Value = expression.evaluate(context)
+  override def evaluate(stack: Stack): Value = expression.evaluate(stack)
 }
 
 object Program {
@@ -45,11 +45,11 @@ object Program {
 }
 
 case class Program(statements: List[Statement]) extends Node {
-  override def toString: String = statements.mkString(";\n") + (if (statements.nonEmpty) ";")
+  override def toString: String = statements.mkString("\n")
 
-  override def evaluate(context: Context): Value =
+  override def evaluate(stack: Stack): Value =
     statements
-      .map(_.evaluate(context))
+      .map(_.evaluate(stack))
       .map(_ match {
         case ReturnValue(v) => return v
         case v => v
@@ -85,12 +85,12 @@ object BlockStatement {
 case class BlockStatement(statements: List[Statement]) extends Node {
   override def toString: String = statements match {
     case List() => "{}"
-    case _ => "{\n\t" + statements.mkString(";\n") + (if (statements.nonEmpty) ";") + "\n}"
+    case _ => "{\n\t" + statements.mkString("\n") + (if (statements.nonEmpty) "\n}")
   }
 
-  override def evaluate(context: Context): Value =
+  override def evaluate(stack: Stack): Value =
     statements
-      .map(_.evaluate(context))
+      .map(_.evaluate(stack))
       .map(_ match {
         case v: ReturnValue => return v
         case v => v
@@ -123,10 +123,10 @@ case class IfExpression(condition: Expression, consequence: BlockStatement, alte
     case Some(block) => "else " + block.toString
   })
 
-  override def evaluate(context: Context): Value = condition.evaluate(context) match {
-    case BooleanValue(false) | NoValue if alternative.isDefined => alternative.get.evaluate(context)
+  override def evaluate(stack: Stack): Value = condition.evaluate(stack) match {
+    case BooleanValue(false) | NoValue if alternative.isDefined => alternative.get.evaluate(stack)
     case BooleanValue(false) | NoValue => NoValue
-    case _ => consequence.evaluate(context)
+    case _ => consequence.evaluate(stack)
   }
 
 }
@@ -146,7 +146,7 @@ object LetStatement {
 case class LetStatement(name: String, expression: Expression) extends Statement {
   override def toString: String = "let " + name + " = " + expression.toString + ";"
 
-  override def evaluate(context: Context): Value = context(name) = expression.evaluate(context)
+  override def evaluate(stack: Stack): Value = stack(name) = expression.evaluate(stack)
 }
 
 object ReturnStatement {
@@ -161,7 +161,7 @@ object ReturnStatement {
 case class ReturnStatement(expression: Expression) extends Statement {
   override def toString: String = "return " + expression + ";"
 
-  override def evaluate(context: Context): Value = ReturnValue(expression.evaluate(context))
+  override def evaluate(stack: Stack): Value = ReturnValue(expression.evaluate(stack))
 }
 
 object ExpressionStatement {
@@ -173,9 +173,9 @@ object ExpressionStatement {
 }
 
 case class ExpressionStatement(expression: Expression) extends Statement {
-  override def toString: String = expression.toString
+  override def toString: String = expression.toString + ";"
 
-  override def evaluate(context: Context): Value = expression.evaluate(context)
+  override def evaluate(stack: Stack): Value = expression.evaluate(stack)
 }
 
 object BoolLiteral {
@@ -194,7 +194,7 @@ case class BoolLiteral(value: Boolean) extends Expression {
 
   def evaluate() = BooleanValue(value)
 
-  override def evaluate(context: Context): Value = BooleanValue(value)
+  override def evaluate(stack: Stack): Value = BooleanValue(value)
 }
 
 object IntegerLiteral {
@@ -208,7 +208,7 @@ object IntegerLiteral {
 case class IntegerLiteral(value: Int) extends Expression {
   override def toString: String = value.toString
 
-  def evaluate(context: Context) = IntegerValue(value)
+  def evaluate(stack: Stack) = IntegerValue(value)
 
 }
 
@@ -226,7 +226,7 @@ object Identifier {
 case class Identifier(value: String) extends Expression {
   override def toString: String = value
 
-  override def evaluate(context: Context): Value = context(value) match {
+  override def evaluate(stack: Stack): Value = stack(value) match {
     case None => throw new RuntimeException
     case Some(v) => v
   }
@@ -259,7 +259,7 @@ object FunctionLiteral {
 case class FunctionLiteral(parameters: List[Identifier], body: BlockStatement) extends Expression {
   override def toString: String = "fn(" + parameters.mkString(", ") + ")" + body.toString
 
-  override def evaluate(context: Context): Value = FunctionValue(parameters, body)
+  override def evaluate(stack: Stack): Value = FunctionValue(parameters, body)
 }
 
 
@@ -272,7 +272,6 @@ object Primary {
       case LeftParenthesisToken => ParanthizedExpression(lexer)
       case FunctionToken => FunctionLiteral(lexer)
       case IfToken => IfExpression(lexer)
-      case _ => CallExpression(lexer)
     }
     Primary(expression)
   }
@@ -281,7 +280,7 @@ object Primary {
 case class Primary(expression: Expression) extends Expression {
   override def toString: String = expression.toString
 
-  override def evaluate(context: Context): Value = expression.evaluate(context)
+  override def evaluate(stack: Stack): Value = expression.evaluate(stack)
 }
 
 
@@ -296,28 +295,30 @@ object CallExpression {
 
 
   def apply(lexer: Lexer): CallExpression = {
-    val function = Identifier(lexer)
+    val primary = Primary(lexer)
+    if (lexer.currentToken != LeftParenthesisToken)
+      return CallExpression(primary, None)
     lexer.expectCurrent(LeftParenthesisToken)
     val arguments = lexer.currentToken match {
       case RightParenthesisToken => List()
       case _ => build(lexer, Expression(lexer))
     }
     lexer.expectCurrent(RightParenthesisToken)
-    lexer.nextToken()
-    CallExpression(function, arguments)
+    CallExpression(primary, Some(arguments))
   }
 }
 
-case class CallExpression(function: Expression, arguments: List[Expression]) extends Expression {
-  override def toString: String = function.toString + "(" + arguments.mkString(", ") + ")"
+case class CallExpression(primary: Primary, arguments: Option[List[Expression]]) extends Expression {
+  override def toString: String = primary.toString + (if (arguments.nonEmpty) "(" + arguments.get.mkString(", ") + ")"; else "")
 
-  override def evaluate(context: Context): Value = {
-    val evaluatedArguments = arguments.map(_.evaluate(context))
-    val result = function.evaluate(context) match {
+  override def evaluate(stack: Stack): Value = {
+    if (arguments.isEmpty) return primary.evaluate(stack)
+    val evaluatedArguments = arguments.get.map(_.evaluate(stack))
+    val result = primary.evaluate(stack) match {
       case FunctionValue(parameters, body) =>
         val variables = parameters.map(_.value).zip(evaluatedArguments)
-        val innerContext = context.extend(collection.mutable.Map(variables: _*))
-        body.evaluate(innerContext)
+        val innerstack = stack.extend(collection.mutable.Map(variables: _*))
+        body.evaluate(innerstack)
       case _ => throw new RuntimeException
     }
     result match {
@@ -355,7 +356,7 @@ object PointTerm {
 case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expression {
   override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")
 
-  override def evaluate(context: Context): Value = right.foldLeft(left.evaluate(context))((result: Value, pair) => (pair._1, pair._2.evaluate(context)) match {
+  override def evaluate(stack: Stack): Value = right.foldLeft(left.evaluate(stack))((result: Value, pair) => (pair._1, pair._2.evaluate(stack)) match {
     case (AsteriskToken, t: IntegerValue) => multiply(result, t)
     case (SlashToken, t: IntegerValue) => divide(result, t)
   })
@@ -397,8 +398,8 @@ object DashTerm {
 case class DashTerm(left: PointTerm, right: List[(Token, PointTerm)]) extends Expression {
   override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")
 
-  override def evaluate(context: Context): Value =
-    right.foldLeft(left.evaluate(context))((result: Value, pair) => (pair._1, pair._2.evaluate(context)) match {
+  override def evaluate(stack: Stack): Value =
+    right.foldLeft(left.evaluate(stack))((result: Value, pair) => (pair._1, pair._2.evaluate(stack)) match {
       case (MinusToken, t: IntegerValue) => subtract(result, t)
       case (PlusToken, t: IntegerValue) => add(result, t)
     })
@@ -411,6 +412,7 @@ case class DashTerm(left: PointTerm, right: List[(Token, PointTerm)]) extends Ex
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v - w)
   }
 }
+
 
 object Unary {
   def build(lexer: Lexer, head: Token): List[Token] = lexer.currentToken match {
@@ -429,15 +431,15 @@ object Unary {
         build(lexer, operator)
       case _ => List()
     }
-    val pointTerm = Primary(lexer)
+    val pointTerm = CallExpression(lexer)
     Unary(prefixes, pointTerm)
   }
 }
 
-case class Unary(prefixes: List[Token], primary: Primary) extends Expression {
-  override def toString: String = prefixes.mkString("") + primary.toString
+case class Unary(prefixes: List[Token], call: CallExpression) extends Expression {
+  override def toString: String = prefixes.mkString("") + call.toString
 
-  override def evaluate(context: Context): Value = prefixes.foldLeft(primary.evaluate(context))((term, token) => token match {
+  override def evaluate(stack: Stack): Value = prefixes.foldLeft(call.evaluate(stack))((term, token) => token match {
     case MinusToken => minus(term)
     case BangToken => not(term)
   })
@@ -475,11 +477,11 @@ case class Comparison(left: DashTerm, right: Option[(Token, DashTerm)]) extends 
     case Some(pair) => " " + pair._1.toString + " " + pair._2.toString
   })
 
-  override def evaluate(context: Context): Value = right match {
-    case None => left.evaluate(context)
+  override def evaluate(stack: Stack): Value = right match {
+    case None => left.evaluate(stack)
     case Some((token, right)) => token match {
-      case LessThanToken => lessThan(left.evaluate(context), right.evaluate(context))
-      case GreaterThanToken => greaterThan(left.evaluate(context), right.evaluate(context))
+      case LessThanToken => lessThan(left.evaluate(stack), right.evaluate(stack))
+      case GreaterThanToken => greaterThan(left.evaluate(stack), right.evaluate(stack))
     }
   }
 
@@ -513,11 +515,11 @@ case class Equality(left: Comparison, right: Option[(Token, Comparison)]) extend
     case Some(pair) => " " + pair._1.toString + " " + pair._2.toString
   })
 
-  override def evaluate(context: Context): Value = right match {
-    case None => left.evaluate(context)
+  override def evaluate(stack: Stack): Value = right match {
+    case None => left.evaluate(stack)
     case Some((token, term)) => token match {
-      case EqualsToken => BooleanValue(left.evaluate(context) == term.evaluate(context))
-      case NotEqualsToken => BooleanValue(left.evaluate(context) != term.evaluate(context))
+      case EqualsToken => BooleanValue(left.evaluate(stack) == term.evaluate(stack))
+      case NotEqualsToken => BooleanValue(left.evaluate(stack) != term.evaluate(stack))
     }
   }
 }

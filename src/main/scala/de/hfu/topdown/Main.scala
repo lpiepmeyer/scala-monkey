@@ -18,13 +18,14 @@ object Main {
 
   private def execute(filename: String): Unit = {
     val reader = new FileReader(filename)
-    val actual = de.hfu.topdown.Program(Lexer(reader)).evaluate(Context())
+    val program = de.hfu.topdown.Program(Lexer(reader))
+    val actual = program.evaluate(Stack())
     println(actual)
   }
 
   private def repl(): Unit = {
     println("starting REPL")
-    val context = Context()
+    val context = Stack()
     while (true) {
       val input = readLine(">> ")
       if (input.trim() == "exit") {

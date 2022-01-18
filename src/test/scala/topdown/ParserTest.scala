@@ -22,7 +22,7 @@ class ParserTest extends AnyFunSuite {
 
 
   test("parse block statement") {
-    val testCases = List("{let foo=23; return foo;23}")
+    val testCases = List("{let foo=23; return foo;23;}")
     check(testCases, BlockStatement(_))
   }
 
@@ -47,13 +47,15 @@ class ParserTest extends AnyFunSuite {
 
 
   test("parse comparison") {
-    val testCases = List("1<4")
+    val testCases = List("1<4", "1>4", "foo>bar", "foo<bar")
     check(testCases, Comparison(_))
   }
 
 
   test("parse dash term") {
     val tests = List(
+      "2+4",
+      "2-4",
       "foo + bar",
       "2 + 3 - 4",
       "2 + 3 * 4 - 4 / 5",
@@ -69,6 +71,7 @@ class ParserTest extends AnyFunSuite {
       "1 == 4",
       "true == true",
       "false == 1 > 2",
+      "foo==bar"
     )
     check(tests, t => Equality(t))
   }
@@ -77,6 +80,7 @@ class ParserTest extends AnyFunSuite {
   test("parse function literal ") {
     val tests = List(
       "fn(a, b){a + b;}",
+      "fn(a){2*a ;}",
       "fn(){}"
     )
     check(tests, t => FunctionLiteral(t))
@@ -84,9 +88,7 @@ class ParserTest extends AnyFunSuite {
 
 
   test("parse identifier") {
-    val tests = List(
-      ("foobar"),
-    )
+    val tests = List("foobar")
     check(tests, t => Identifier(t))
   }
 
@@ -119,6 +121,12 @@ class ParserTest extends AnyFunSuite {
 
 
   test("parse paranthized expression") {
+    val testCases = List(
+      "(5)",
+      "(f(2*3))",
+      "(foobar)"
+    )
+    check(testCases, t => ParanthizedExpression(t))
   }
 
 
@@ -139,7 +147,8 @@ class ParserTest extends AnyFunSuite {
 
   test("parse program ") {
     val testCases = List(
-      "let foo=23; return foo;"
+      "let foo=23; return foo;",
+      "let foo=23; 4711;"
     )
     check(testCases, Program(_))
   }
