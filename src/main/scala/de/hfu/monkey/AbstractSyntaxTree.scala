@@ -22,16 +22,16 @@ object Expression {
 
 abstract class Expression() extends Node
 
-object ParanthizedExpression {
-  def apply(lexer: Lexer): ParanthizedExpression = {
+object ParenthesizedExpression {
+  def apply(lexer: Lexer): ParenthesizedExpression = {
     lexer.expectCurrent(LeftParenthesisToken)
-    val result = ParanthizedExpression(Expression(lexer))
+    val result = ParenthesizedExpression(Expression(lexer))
     lexer.expectCurrent(RightParenthesisToken)
     result
   }
 }
 
-case class ParanthizedExpression(expression: Expression) extends Expression {
+case class ParenthesizedExpression(expression: Expression) extends Expression {
   override def toString: String = "(" + expression + ")"
 
   override def evaluate(stack: Stack): Value = expression.evaluate(stack)
@@ -50,10 +50,10 @@ case class Program(statements: List[Statement]) extends Node {
   override def evaluate(stack: Stack): Value =
     statements
       .map(_.evaluate(stack))
-      .map(_ match {
+      .map {
         case ReturnValue(v) => return v
         case v => v
-      }).last
+      }.last
 }
 
 object StatementList {
@@ -91,10 +91,10 @@ case class BlockStatement(statements: List[Statement]) extends Node {
   override def evaluate(stack: Stack): Value =
     statements
       .map(_.evaluate(stack))
-      .map(_ match {
+      .map {
         case v: ReturnValue => return v
         case v => v
-      }).last
+      }.last
 }
 
 object IfExpression {
@@ -194,7 +194,7 @@ object BoolLiteral {
 case class BoolLiteral(value: Boolean) extends Expression {
   override def toString: String = value.toString
 
-  def evaluate() = BooleanValue(value)
+  def evaluate(): BooleanValue = BooleanValue(value)
 
   override def evaluate(stack: Stack): Value = BooleanValue(value)
 }
@@ -210,7 +210,7 @@ object IntegerLiteral {
 case class IntegerLiteral(value: Int) extends Expression {
   override def toString: String = value.toString
 
-  def evaluate(stack: Stack) = IntegerValue(value)
+  def evaluate(stack: Stack): IntegerValue = IntegerValue(value)
 
 }
 
@@ -271,9 +271,10 @@ object Primary {
       case IdentifierToken(_) => Identifier(lexer)
       case IntegerToken(_) => IntegerLiteral(lexer)
       case TrueToken | FalseToken => BoolLiteral(lexer)
-      case LeftParenthesisToken => ParanthizedExpression(lexer)
+      case LeftParenthesisToken => ParenthesizedExpression(lexer)
       case FunctionToken => FunctionLiteral(lexer)
       case IfToken => IfExpression(lexer)
+      case token => throw MonkeyException("I tried to read simple text like identifier, number, boolean, parentheses, 'fn', or 'if' but found '" + token + "'")
     }
     Primary(expression)
   }
@@ -319,9 +320,9 @@ case class CallExpression(primary: Primary, arguments: Option[List[Expression]])
     val result = primary.evaluate(stack) match {
       case FunctionValue(parameters, body) =>
         val variables = parameters.map(_.value).zip(evaluatedArguments)
-        val innerstack = stack.extend(variables)
-        body.evaluate(innerstack)
-      case _ => throw new RuntimeException
+        val extendedStack = stack.extend(variables)
+        body.evaluate(extendedStack)
+      case value: Value => throw MonkeyException("I tried to read a function call, but found the unexpected value '" + value + "'")
     }
     result match {
       case ReturnValue(value) => value
@@ -361,7 +362,7 @@ case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expressio
   override def evaluate(stack: Stack): Value = right.foldLeft(left.evaluate(stack))((result: Value, pair) => (pair._1, pair._2.evaluate(stack)) match {
     case (AsteriskToken, t: IntegerValue) => multiply(result, t)
     case (SlashToken, t: IntegerValue) => divide(result, t)
-    case (token, value) => throw MonkeyException("I tried to calculate a multiplication or divsion and did not expect the combiation of '" + token + "' and '" + value + "'")
+    case (token, value) => throw MonkeyException("I tried to calculate a multiplication or division and did not expect the combination of '" + token + "' and '" + value + "'")
   })
 
   private def multiply(left: Value, right: Value): Value = (left, right) match {
@@ -450,6 +451,7 @@ case class Unary(prefixes: List[Token], call: CallExpression) extends Expression
   override def evaluate(stack: Stack): Value = prefixes.foldLeft(call.evaluate(stack))((term, token) => token match {
     case MinusToken => minus(term)
     case BangToken => not(term)
+    case token => throw MonkeyException("I tried to read the prefix '!' or '-', but found the unexpected operator '" + token + "'")
   })
 
   def minus(option: Value): Value = option match {

@@ -126,7 +126,7 @@ class ParserTest extends AnyFunSuite {
       "(f(2*3))",
       "(foobar)"
     )
-    check(testCases, t => ParanthizedExpression(t))
+    check(testCases, t => ParenthesizedExpression(t))
   }
 
 
