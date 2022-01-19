@@ -10,7 +10,7 @@ object Main {
   def main(args: Array[String]): Unit = {
     if (args.length == 1) {
       val filename = args(0)
-      execute(filename)
+      println(execute(filename))
     } else {
       repl()
     }

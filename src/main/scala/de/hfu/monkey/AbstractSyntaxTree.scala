@@ -137,10 +137,8 @@ object LetStatement {
     val identifier = Identifier(lexer)
     lexer.expectCurrent(AssignmentToken)
     val expression = Expression(lexer)
-    val result = LetStatement(identifier.value, expression)
-
     lexer.skipToken(SemicolonToken)
-    result
+    LetStatement(identifier.value, expression)
   }
 }
 
