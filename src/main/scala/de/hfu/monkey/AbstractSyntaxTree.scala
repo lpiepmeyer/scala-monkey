@@ -152,7 +152,7 @@ case class LetStatement(name: String, expression: Expression) extends Statement 
 
 object ReturnStatement {
   def apply(lexer: Lexer): ReturnStatement = {
-    if (!lexer.nextToken()) throw new RuntimeException
+     lexer.nextToken()
     val expression = Expression(lexer)
     lexer.skipToken(SemicolonToken)
     ReturnStatement(expression)
@@ -184,6 +184,7 @@ object BoolLiteral {
     val result = lexer.currentToken match {
       case TrueToken => BoolLiteral(true)
       case FalseToken => BoolLiteral(false)
+      case token => throw MonkeyException("I tried to read a boolean value but found '" + token + "' which is neither 'true' nor 'false'")
     }
     lexer.nextToken()
     result
@@ -360,14 +361,17 @@ case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expressio
   override def evaluate(stack: Stack): Value = right.foldLeft(left.evaluate(stack))((result: Value, pair) => (pair._1, pair._2.evaluate(stack)) match {
     case (AsteriskToken, t: IntegerValue) => multiply(result, t)
     case (SlashToken, t: IntegerValue) => divide(result, t)
+    case (token, value) => throw MonkeyException("I tried to calculate a multiplication or divsion and did not expect the combiation of '" + token + "' and '" + value + "'")
   })
 
   private def multiply(left: Value, right: Value): Value = (left, right) match {
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v * w)
+    case (v, w) => throw MonkeyException("I tried to calculate a product and did not expect the operands of '" + v + "' and '" + w + "'")
   }
 
   private def divide(left: Value, right: Value): Value = (left, right) match {
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v / w)
+    case (v, w) => throw MonkeyException("I tried to calculate a division and did not expect the operands of '" + v + "' and '" + w + "'")
   }
 }
 
@@ -403,14 +407,17 @@ case class DashTerm(left: PointTerm, right: List[(Token, PointTerm)]) extends Ex
     right.foldLeft(left.evaluate(stack))((result: Value, pair) => (pair._1, pair._2.evaluate(stack)) match {
       case (MinusToken, t: IntegerValue) => subtract(result, t)
       case (PlusToken, t: IntegerValue) => add(result, t)
+      case (token, value) => throw MonkeyException("I tried to calculate a sum or difference and did not expect the operands of '" + token + "' and '" + value + "'")
     })
 
   private def add(left: Value, right: Value): Value = (left, right) match {
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v + w)
+    case (v, w) => throw MonkeyException("I tried to calculate a sum  and did not expect the operands of '" + v + "' and '" + w + "'")
   }
 
   private def subtract(left: Value, right: Value): Value = (left, right) match {
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => IntegerValue(v - w)
+    case (v, w) => throw MonkeyException("I tried to calculate a difference and did not expect the operands of '" + v + "' and '" + w + "'")
   }
 }
 
@@ -483,15 +490,18 @@ case class Comparison(left: DashTerm, right: Option[(Token, DashTerm)]) extends 
     case Some((token, right)) => token match {
       case LessThanToken => lessThan(left.evaluate(stack), right.evaluate(stack))
       case GreaterThanToken => greaterThan(left.evaluate(stack), right.evaluate(stack))
+      case token => throw MonkeyException("I tried to compare two values and did not expect '" + token + "'")
     }
   }
 
   private def lessThan(left: Value, right: Value): Value = (left, right) match {
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => BooleanValue(v < w)
+    case (v, w) => throw MonkeyException("I tried to compare two integers and did not expect the operands '" + v + "' and '" + w + "'")
   }
 
   private def greaterThan(left: Value, right: Value): Value = (left, right) match {
     case (IntegerValue(v: Int), IntegerValue(w: Int)) => BooleanValue(v > w)
+    case (v, w) => throw MonkeyException("I tried to compare two integers and did not expect the operands '" + v + "' and '" + w + "'")
   }
 }
 
@@ -521,6 +531,7 @@ case class Equality(left: Comparison, right: Option[(Token, Comparison)]) extend
     case Some((token, term)) => token match {
       case EqualsToken => BooleanValue(left.evaluate(stack) == term.evaluate(stack))
       case NotEqualsToken => BooleanValue(left.evaluate(stack) != term.evaluate(stack))
+      case token => throw MonkeyException("I tried to see if two values are equal and did not expect '" + token + "'")
     }
   }
 }
