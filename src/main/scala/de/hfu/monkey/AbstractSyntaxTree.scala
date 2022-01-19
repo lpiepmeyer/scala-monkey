@@ -138,14 +138,14 @@ object LetStatement {
     lexer.expectCurrent(AssignmentToken)
     val expression = Expression(lexer)
     lexer.skipToken(SemicolonToken)
-    LetStatement(identifier.value, expression)
+    LetStatement(identifier, expression)
   }
 }
 
-case class LetStatement(name: String, expression: Expression) extends Statement {
-  override def toString: String = "let " + name + " = " + expression.toString + ";"
+case class LetStatement(identifier: Identifier, expression: Expression) extends Statement {
+  override def toString: String = "let " + identifier + " = " + expression.toString + ";"
 
-  override def evaluate(stack: Stack): Value = stack(name) = expression.evaluate(stack)
+  override def evaluate(stack: Stack): Value = stack(identifier.value) = expression.evaluate(stack)
 }
 
 object ReturnStatement {

@@ -1,22 +1,26 @@
+# A Scala Implementation of Monkey Programming Language
+
 This a scala implementation of the [monkey programming language](https://monkeylang.org). Monkey is a simple C-style
 language. An interpreter with Golang is explained in the
-book [Writing An Interpreter In Go](https://interpreterbook.com/). The Scala's case classes offer a very simple approach
+book [Writing An Interpreter In Go](https://interpreterbook.com/). Scala's case classes offer a very simple approach
 which is guided by the [EBNF](#EBNF) of Monkey.
 
-Example: the line
+### Example
+
+The line
 
 ```sh
-<let-statement>         ::= "let" <identifier> "=" <expression> ";"
+<let-statement>         ::= "let" <identifier> "=" <expression> [";"]
 ```
 
-is mapped to
+is mapped to the scala class
 
 ```sh
-case class LetStatement(name: String, expression: Expression) 
+case class LetStatement(identifier: Identifier, expression: Expression) 
 ```
 
-In this implementation every case class has a compagnion object, which contains an apply method to parse a node in the
-abstract syntax tree (AST):
+Every case class in this implementation has a compagnion object, which contains an `apply`-method to parse a node for
+the correpsonding abstract syntax tree (AST).Parsing the code is again similar to the EBNF of the particular node
 
 ```sh
 object LetStatement {
@@ -31,13 +35,20 @@ object LetStatement {
 }
 ```
 
-Parsing the code is also close to the EBNF of the particular node
+Every case class contains an `evaluate`-method to evaluate the AST during interpreation. The `evaluate`-method for the
+let-statement is
+
+```sh
+ override def evaluate(stack: Stack): Value = stack(identifier.value) = expression.evaluate(stack)
+```
+
+Where `stack` is the context of the monkey program, containing values for all variables.
 
 ## Installation
 
-Install [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
+* Install [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html)
 
-Download this repository and change to the directory with this README file.
+* Download this repository and change to the directory with this README file.
 
 ## Basic Use
 
@@ -47,13 +58,30 @@ To start the REPL (read-evalaute-print-loop) run
 sbt run 
 ```
 
-To execute monkey commands interactively.
+To execute monkey commands interactively:
+
+```sh
+starting REPL
+>> let a=23
+23
+>> let a=a+19
+42
+>> exit
+terminating REPL
+```
 
 To execute a file with monkey source code run
 
 ```sh
 sbt "run examples/factorial.mon"
+720
 ```
+
+## Examples
+
+The examples folder contains examples which can be run by interpreter. The last line contains a comment with the
+expected result of the programm. This reuslts are used by the test `InterpreterTest` in
+the `src/test/scala/de/hfu/monkey` directory.
 
 ## EBNF
 

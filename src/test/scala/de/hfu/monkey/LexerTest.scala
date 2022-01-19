@@ -1,4 +1,4 @@
-package topdown
+package de.hfu.monkey
 
 import de.hfu.monkey.lexer._
 import org.scalatest.funsuite.AnyFunSuite

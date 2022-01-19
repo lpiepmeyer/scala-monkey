@@ -1,6 +1,5 @@
-package topdown
+package de.hfu.monkey
 
-import de.hfu.monkey.Main
 import org.scalatest.funsuite.AnyFunSuite
 
 import java.io.File

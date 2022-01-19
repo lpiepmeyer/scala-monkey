@@ -1,6 +1,5 @@
-package topdown
+package de.hfu.monkey
 
-import de.hfu.monkey._
 import org.scalatest.funsuite.AnyFunSuite
 
 class StackTest extends AnyFunSuite {
