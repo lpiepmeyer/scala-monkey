@@ -3,4 +3,4 @@ let fact = fn(n) {
   else { n * fact(n - 1) }
 };
 
-fact(6)
+fact(6)  // 720

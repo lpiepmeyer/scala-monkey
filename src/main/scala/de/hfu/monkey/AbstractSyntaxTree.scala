@@ -138,7 +138,8 @@ object LetStatement {
     lexer.expectCurrent(AssignmentToken)
     val expression = Expression(lexer)
     val result = LetStatement(identifier.value, expression)
-    lexer.expectCurrent(SemicolonToken)
+
+    lexer.skipToken(SemicolonToken)
     result
   }
 }
@@ -153,7 +154,7 @@ object ReturnStatement {
   def apply(lexer: Lexer): ReturnStatement = {
     if (!lexer.nextToken()) throw new RuntimeException
     val expression = Expression(lexer)
-    lexer.expectCurrent(SemicolonToken)
+    lexer.skipToken(SemicolonToken)
     ReturnStatement(expression)
   }
 }

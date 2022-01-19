@@ -3,4 +3,4 @@ let encrypt = fn(x) { x + superSecretCode; };
 
 let superSecretCode = 4321;
 
-encrypt(17);
+encrypt(17);  // 4338

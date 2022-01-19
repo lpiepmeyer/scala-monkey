@@ -17,4 +17,4 @@ let isPrime=fn(n){
     }
 };
 
-isPrime(-1);
+isPrime(-1); // false

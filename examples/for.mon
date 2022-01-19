@@ -16,4 +16,4 @@ let isDivisible=fn(n,by){
 };
 
 for(1,100,fn(a,b){a+b},0)
-for(1,5,fn(a,b){a*b},1)
+for(1,5,fn(a,b){a*b},1) // 120

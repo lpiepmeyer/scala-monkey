@@ -33,11 +33,11 @@ object Main {
     }
 
 
-  private def execute(filename: String): Unit = {
-    val reader = new FileReader(filename)
-    val actual = evaluate(Lexer(reader))
-    println(actual)
-  }
+   def execute(filename: String): String = {
+     val reader = new FileReader(filename)
+     val actual = evaluate(Lexer(reader))
+     actual
+   }
 
   private def repl(): Unit = {
     println("starting REPL")

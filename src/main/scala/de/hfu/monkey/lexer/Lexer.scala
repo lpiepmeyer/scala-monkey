@@ -14,8 +14,8 @@ object Lexer {
 class Lexer(val tokenizer: StreamTokenizer) {
 
   private val charToToken = Map('+' -> PlusToken, '-' -> MinusToken, '*' -> AsteriskToken, '/' -> SlashToken, '!' -> BangToken, '(' -> LeftParenthesisToken, ')' -> RightParenthesisToken, '{' -> LeftBraceToken, '}' -> RightBraceToken, '<' -> LessThanToken, '>' -> GreaterThanToken, 0 -> EOFToken, ';' -> SemicolonToken, ',' -> CommaToken, '=' -> AssignmentToken)
-  tokenizer.slashStarComments(false)
-  tokenizer.slashSlashComments(false)
+  tokenizer.slashStarComments(true)
+  tokenizer.slashSlashComments(true)
   tokenizer.ordinaryChar('/')
   tokenizer.ordinaryChar('-')
   private var monkeyToken = next()
@@ -48,6 +48,8 @@ class Lexer(val tokenizer: StreamTokenizer) {
       tokenizer.pushBack()
       notFound
   }
+
+  def skipToken(token: Token) = if (currentToken == token) nextToken()
 
   private def toMonkeyToken(simpleToken: Int): Token = tokenizer.ttype match {
     case _ if charToToken.keySet.contains(simpleToken.toChar) => (charToToken(simpleToken.toChar))

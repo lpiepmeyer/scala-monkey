@@ -5,3 +5,5 @@ let applyFunc = fn(a, b, func) { func(a, b); };
 applyFunc(2, 3, add)
   + applyFunc(3, 10, genSub())
   + applyFunc(5, 10, fn(a, b) { a * b })
+
+  // 48
