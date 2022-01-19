@@ -28,7 +28,8 @@ object Main {
     try {
       toString(Program(lexer).evaluate(stack))
     } catch {
-      case e: RuntimeException => e.getMessage
+      case MonkeyException(message) => message
+      case e: RuntimeException => e.getMessage + " (replace by MonkeyEcpetion)"
     }
 
 

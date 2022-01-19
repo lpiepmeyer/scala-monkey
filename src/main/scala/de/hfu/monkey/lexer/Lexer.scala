@@ -1,5 +1,7 @@
 package de.hfu.monkey.lexer
 
+import de.hfu.monkey.MonkeyException
+
 import java.io.{Reader, StreamTokenizer, StringReader}
 
 object Lexer {
@@ -22,7 +24,7 @@ class Lexer(val tokenizer: StreamTokenizer) {
 
   def expectCurrent(expectedToken: Token): Unit = {
     if (monkeyToken != expectedToken)
-      throw new RuntimeException("found " + monkeyToken + " expected " + expectedToken)
+      throw MonkeyException(expectedToken, monkeyToken)
     nextToken()
   }
 
@@ -52,7 +54,7 @@ class Lexer(val tokenizer: StreamTokenizer) {
     case StreamTokenizer.TT_NUMBER => IntegerToken(tokenizer.nval.toInt.toString)
     case StreamTokenizer.TT_WORD => Token.lookupIdent(tokenizer.sval)
     case StreamTokenizer.TT_EOF => EOFToken
-    case _ => IllegalToken(simpleToken.toString)
+    case _ => throw MonkeyException("I tried to read your code, but found the illegal token '" + simpleToken.toChar + "'")
   }
 
 }

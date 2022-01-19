@@ -104,11 +104,11 @@ object IfExpression {
     lexer.expectCurrent(LeftParenthesisToken)
     val condition = Expression(lexer)
     lexer.expectCurrent(RightParenthesisToken)
-    if (lexer.currentToken != LeftBraceToken) throw new RuntimeException("found " + lexer.currentToken + " expected " + LeftBraceToken)
+    if (lexer.currentToken != LeftBraceToken) throw MonkeyException(LeftBraceToken, lexer.currentToken)
     val consequence = BlockStatement(lexer)
     if (lexer.currentToken == ElseToken) {
       lexer.nextToken()
-      if (lexer.currentToken != LeftBraceToken) throw new RuntimeException("found " + lexer.currentToken + " expected " + LeftBraceToken)
+      if (lexer.currentToken != LeftBraceToken) throw MonkeyException(LeftBraceToken, lexer.currentToken)
       val alternative = BlockStatement(lexer)
       return IfExpression(condition, consequence, Some(alternative))
     }
@@ -216,7 +216,7 @@ object Identifier {
   def apply(lexer: Lexer): Identifier = {
     val result = lexer.currentToken match {
       case IdentifierToken(name) => Identifier(name)
-      case _ => throw new RuntimeException
+      case unexpected: Token => throw MonkeyException("identifier", unexpected)
     }
     lexer.nextToken()
     result
@@ -227,7 +227,7 @@ case class Identifier(value: String) extends Expression {
   override def toString: String = value
 
   override def evaluate(stack: Stack): Value = stack(value) match {
-    case None => throw new RuntimeException("identifier '" + this.value + "' not found")
+    case None => throw MonkeyException("identifier '" + this.value + "' not found")
     case Some(v) => v
   }
 }
