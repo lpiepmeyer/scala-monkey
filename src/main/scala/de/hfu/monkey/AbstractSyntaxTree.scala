@@ -88,13 +88,16 @@ case class BlockStatement(statements: List[Statement]) extends Node {
     case _ => "{\n\t" + statements.mkString("\n") + (if (statements.nonEmpty) "\n}")
   }
 
-  override def evaluate(stack: Stack): Value =
-    statements
-      .map(_.evaluate(stack))
-      .map {
+  override def evaluate(stack: Stack): Value = {
+    for (i <- statements.indices) {
+      statements(i).evaluate(stack) match {
         case v: ReturnValue => return v
-        case v => v
-      }.last
+        case v if i + 1 == statements.size => return v
+        case _ =>
+      }
+    }
+    throw new RuntimeException("internal error")
+  }
 }
 
 object IfExpression {
@@ -123,10 +126,13 @@ case class IfExpression(condition: Expression, consequence: BlockStatement, alte
     case Some(block) => "else " + block.toString
   })
 
-  override def evaluate(stack: Stack): Value = condition.evaluate(stack) match {
-    case BooleanValue(false) | NoValue if alternative.isDefined => alternative.get.evaluate(stack)
-    case BooleanValue(false) | NoValue => NoValue
-    case _ => consequence.evaluate(stack)
+  override def evaluate(stack: Stack): Value = {
+    val result = condition.evaluate(stack) match {
+      case BooleanValue(false) | NoValue if alternative.isDefined => alternative.get.evaluate(stack)
+      case BooleanValue(false) | NoValue => NoValue
+      case _ => consequence.evaluate(stack)
+    }
+    result
   }
 
 }
@@ -322,6 +328,7 @@ case class CallExpression(primary: Primary, arguments: Option[List[Expression]])
         body.evaluate(extendedStack)
       case value: Value => throw MonkeyException("I tried to read a function call, but found the unexpected value '" + value + "'")
     }
+
     result match {
       case ReturnValue(value) => value
       case value => value

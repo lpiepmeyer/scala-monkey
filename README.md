@@ -5,6 +5,9 @@ language. An interpreter with Golang is explained in the
 book [Writing An Interpreter In Go](https://interpreterbook.com/). Scala's case classes offer a very simple approach
 which is guided by the [EBNF](#EBNF) of Monkey.
 
+On my laptop, that takes jlox about 72 seconds to execute. An equivalent C program finishes in half a second 68.60s fib(
+35); 0.03s c-prgramm mot -O3
+
 ### Example
 
 The line

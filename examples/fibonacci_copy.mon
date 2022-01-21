@@ -1,0 +1,8 @@
+let fibonacci = fn(n) {
+  if (n < 2) {
+     return n
+  }
+  fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+fibonacci(6)  // 8 omitting else crashes

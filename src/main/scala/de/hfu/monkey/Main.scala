@@ -1,6 +1,5 @@
 package de.hfu.monkey
 
-
 import de.hfu.monkey.lexer.Lexer
 
 import java.io.FileReader
@@ -16,7 +15,7 @@ object Main {
     }
   }
 
-  def toString(value: Value): String = value match {
+  private def toString(value: Value): String = value match {
     case IntegerValue(v) => v.toString
     case BooleanValue(v) => v.toString
     case NoValue => "None"
@@ -24,7 +23,7 @@ object Main {
     case FunctionValue(parameters, body) => "<<function definition>>"
   }
 
-  def evaluate(lexer: Lexer, stack: Stack = Stack()): String =
+  private def evaluate(lexer: Lexer, stack: Stack = Stack()): String =
     try {
       toString(Program(lexer).evaluate(stack))
     } catch {
