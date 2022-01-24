@@ -3,6 +3,7 @@ package de.hfu.monkey
 import de.hfu.monkey.lexer.Lexer
 
 import java.io.FileReader
+import scala.io.Source
 import scala.io.StdIn.readLine
 
 object Main {
@@ -11,6 +12,7 @@ object Main {
       val filename = args(0)
       println(execute(filename))
     } else {
+      dumpFace()
       repl()
     }
   }
@@ -32,14 +34,20 @@ object Main {
     }
 
 
-   def execute(filename: String): String = {
-     val reader = new FileReader(filename)
-     val actual = evaluate(Lexer(reader))
-     actual
-   }
+  def execute(filename: String): String = {
+    val reader = new FileReader(filename)
+    val actual = evaluate(Lexer(reader))
+    actual
+  }
+
+  private def dumpFace() {
+    val face = Source.fromFile("monkey.face").getLines.toList.mkString("\n")
+    println(face)
+
+  }
 
   private def repl(): Unit = {
-    println("starting REPL")
+    println("Welcome to the monkey REPL")
     val context = Stack()
     while (true) {
       val input = readLine(">> ")

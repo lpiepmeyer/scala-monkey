@@ -2,7 +2,7 @@ package de.hfu.monkey
 
 import de.hfu.monkey.lexer._
 
-abstract class Node {
+trait Node {
   def evaluate(stack: Stack): Value
 }
 
@@ -14,13 +14,13 @@ object Statement {
   }
 }
 
-abstract class Statement() extends Node
+trait Statement extends Node
 
 object Expression {
   def apply(lexer: Lexer): Expression = Equality(lexer)
 }
 
-abstract class Expression() extends Node
+trait Expression extends Node
 
 object ParenthesizedExpression {
   def apply(lexer: Lexer): ParenthesizedExpression = {
@@ -47,14 +47,18 @@ object Program {
 case class Program(statements: List[Statement]) extends Node {
   override def toString: String = statements.mkString("\n")
 
-  override def evaluate(stack: Stack): Value =
-    statements
-      .map(_.evaluate(stack))
-      .map {
+  override def evaluate(stack: Stack): Value = {
+    for (i <- statements.indices) {
+      statements(i).evaluate(stack) match {
         case ReturnValue(v) => return v
-        case v => v
-      }.last
+        case v if i + 1 == statements.size => return v
+        case _ =>
+      }
+    }
+    throw new RuntimeException("internal error")
+  }
 }
+
 
 object StatementList {
   def build(lexer: Lexer, head: Statement, sentinel: Token): List[Statement] = lexer.currentToken match {
@@ -151,7 +155,8 @@ object LetStatement {
 case class LetStatement(identifier: Identifier, expression: Expression) extends Statement {
   override def toString: String = "let " + identifier + " = " + expression.toString + ";"
 
-  override def evaluate(stack: Stack): Value = stack(identifier.value) = expression.evaluate(stack)
+  override def evaluate(stack: Stack): Value =
+    (stack(identifier.value) = expression.evaluate(stack))
 }
 
 object ReturnStatement {
@@ -360,6 +365,7 @@ object PointTerm {
     }
   }
 }
+
 
 case class PointTerm(left: Unary, right: List[(Token, Unary)]) extends Expression {
   override def toString: String = left.toString + right.map(pair => " " + pair._1.toString + " " + pair._2.toString).mkString("")

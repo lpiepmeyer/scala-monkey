@@ -1,9 +1,8 @@
 let for = fn(from, to, body, accu) {
-  return if (from>to) {
-     accu
-  } else {
-     for(from+1, to, body, body(accu,from))
+  if (from>to) {
+    return  accu
   }
+  for(from+1, to, body, body(accu,from))
 };
 
 let f = fn(a,b) {
